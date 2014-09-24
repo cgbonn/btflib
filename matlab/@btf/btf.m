@@ -141,12 +141,12 @@ classdef btf < handle
         
         function L = get_L_full(obj)
             % get light direction for each sample in the data
-            L = repmat(obj.L, obj.nV, 1);
+            L = repmat(obj.meta.L, obj.meta.nV, 1);
         end
         
         function V = get_V_full(obj)
             % get view direction for each sample in the data
-            V = obj.V(:) * ones(1, obj.nL);
+            V = obj.meta.V(:) * ones(1, obj.meta.nL);
             V = reshape(V', [], 3);
         end
         
@@ -177,7 +177,7 @@ classdef btf < handle
             
             % remove cosine term, if it is in the data
             if obj.meta.cosine_flag
-                abrdf = bsxfun(@rdivide, abrdf, obj.L(:, 3));
+                abrdf = abrdf ./ repmat(obj.meta.L(:, 3), 1, obj.meta.nV, obj.meta.num_channels);
             end
             
             % rearrange as image
@@ -218,7 +218,7 @@ classdef btf < handle
 
                 % remove cosine term, if it is in the data
                 if obj.meta.cosine_flag
-                    texel = bsxfun(@rdivide, texel, obj.L(L, 3));
+                    texel = texel ./ obj.meta.L(L, 3);
                 end
             elseif numel(L) == 2 && numel(V) == 2 || numel(L) == 3 && numel(V) == 3
                 % access via light and view directions -> interpolate samples
@@ -273,7 +273,7 @@ classdef btf < handle
 
                 % remove cosine term, if it is in the data
                 if obj.meta.cosine_flag
-                    img = bsxfun(@rdivide, img, obj.L(:, 3));
+                    img = img ./ obj.meta.L(L, 3);
                 end
                 
                 % rearrange as image
