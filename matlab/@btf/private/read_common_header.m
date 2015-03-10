@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2014 University of Bonn
+% * Copyright 2015 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-10
 % *
 % * This file is part of btflib.
 % *
@@ -29,8 +29,8 @@ function meta = read_common_header(fid, signature)
     meta = read_bidir_sampling(fid, meta);
 
     % read spatial extents of textures (in pixels)
-    meta.width = fread(fid, 1, '*uint32');
-    meta.height = fread(fid, 1, '*uint32');
+    meta.width = fread(fid, 1, 'uint32');
+    meta.height = fread(fid, 1, 'uint32');
 
     % read rotations (if any) of local coordinate frames
     if strcmp(signature(end),'R')

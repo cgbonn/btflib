@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2014 University of Bonn
+% * Copyright 2015 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-10
 % *
 % * This file is part of btflib.
 % *
@@ -69,6 +69,8 @@ classdef btf < handle
             frewind(fid);
 
             switch obj.format_str
+                case 'BDI'
+                    [obj.data, obj.meta] = read_ubo_bdi(fid, signature, header_flag);
                 case 'DFMF'
                     [obj.data, obj.meta] = read_ubo_dfmf(fid, signature, obj.quality);
                 case 'FMF'
@@ -104,6 +106,62 @@ classdef btf < handle
             end
             
             fclose(fid);
+        end
+        
+        function obj = buffer_bdi(obj, max_free_mem_percentage)
+            % attempt to buffer as many ABRDF chunks from a BDI to memory;
+            % optionally a fraction can be specified of the available memory
+            % that is to be used
+            if ~strcmp(obj.format_str, 'BDI')
+                error('buffer_bdi only works with BDIs. non-BDIs are always fully loaded to memory.');
+            end
+            
+            if ~exist('max_free_mem_percentage', 'var')
+                max_free_mem_percentage = 0.9;
+            end
+            
+            mem_available = floor(freemem() * max_free_mem_percentage);
+            
+            mem_required = obj.meta.chunk_size * obj.meta.num_chunks * sizeof('uint16');
+            if mem_required > mem_available
+                obj.data.num_chunks_in_buffer = floor(obj.meta.num_chunks * mem_available / mem_required);
+            else
+                obj.data.num_chunks_in_buffer = obj.meta.num_chunks;
+            end
+            
+            if mem_available < obj.meta.chunk_size * sizeof('uint16')
+                obj.data.num_chunks_in_buffer = 0;
+                error('too little memory available for buffering, one chunk requires %3.2f MB', obj.meta.chunk_size * sizeof('uint16') / 1024 / 1024);
+            end
+            
+            % allocate memory
+            obj.data.chunks = zeros(obj.meta.chunk_size, ...
+                obj.data.num_chunks_in_buffer, 'uint16');
+            
+            % read chunks from file
+            obj.data.fid = fopen(obj.meta.file_name, 'r');
+            for c = 1 : obj.data.num_chunks_in_buffer - 1
+                fprintf('reading chunk %d / %d (total: %d)\n', ...
+                    c, obj.data.num_chunks_in_buffer, obj.meta.num_chunks);
+                obj.get_bdi_chunk(c);
+            end
+            c = obj.data.num_chunks_in_buffer;
+            % handle last chunk separately because it is usually smaller, but
+            % indexing the memory chunks in each of the above iterations would
+            % strongly reduce performance
+            obj.get_bdi_chunk(c);
+            fclose(obj.data.fid);
+            obj.data.chunks_buffered(1 : obj.data.num_chunks_in_buffer) = true;
+        end
+        
+        function obj = only_use_buffered(obj, value)
+            % if a bdi is partially buffered, setting this to true will tell the
+            % decoder to ignore those pixels that aren't buffered, otherwise, it
+            % will (slowly) read those missing pixel from file
+            if ~strcmp(obj.format_str, 'BDI')
+                error('this only works with BDIs. non-BDIs are always fully loaded to memory.');
+            end
+            obj.data.only_use_buffered = logical(value(1));
         end
         
         function obj = set_data(obj, data)
@@ -148,6 +206,17 @@ classdef btf < handle
             % get view direction for each sample in the data
             V = obj.meta.V(:) * ones(1, obj.meta.nL);
             V = reshape(V', [], 3);
+        end
+        
+        function [lin, laz, vin, vaz] = inds_to_angles(obj, l, v)
+            % given light and view indices, return the light inclination and
+            % azimuth, as well as the view inclination and azimuth angles
+            l_sph = cart2sph2(obj.meta.L(l, :));
+            v_sph = cart2sph2(obj.meta.V(v, :));
+            lin = l_sph(1);
+            laz = l_sph(2);
+            vin = v_sph(1);
+            vaz = v_sph(2);
         end
         
         function abrdf = decode_abrdf(obj, x, y)
@@ -294,6 +363,12 @@ classdef btf < handle
             else
                 error('error while decoding: either provide readily computed indices, 3D cartesian directions, or two polar angles respectively for light and view.');
             end
+        end
+        
+        function tensor = get_6d_tensor(obj)
+            % TODO: implement extraction of the full data tensor arranged as a
+            % 6-dimensional array (or 7D if the color channels aren't unrolled)
+            error('not implemented yet!');
         end
     end
     

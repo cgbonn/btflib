@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2014 University of Bonn
+% * Copyright 2015 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-10
 % *
 % * This file is part of btflib.
 % *
@@ -37,11 +37,12 @@ function [format_str, header_flag, signature] = identify_signature(fid)
     % iterate through all signatures and compare with the one in the file
     format_str = '';
     max_len_matched = 0;
-    for s=1:numel(signatures)
+    for s = 1 : numel(signatures)
         sig = signatures{s};
-        if strcmp(sig, sig_str(1:numel(sig))')
+        if strcmp(sig, sig_str(1 : numel(sig))')
             % we want the _longest_ matching string!
             if numel(sig) > max_len_matched
+                max_len_matched = numel(sig);
                 signature = sig;
                 format_str = signatures_map(sig);
                 header_flag = false;

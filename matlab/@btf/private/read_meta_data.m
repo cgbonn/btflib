@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2014 University of Bonn
+% * Copyright 2015 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-10
 % *
 % * This file is part of btflib.
 % *
@@ -58,7 +58,7 @@ function meta = read_meta_data(fid)
     % data!)
     meta.num_channels = 3;
     if (struct_version > 3)
-        meta.num_channels = fread(fid, 1, '*uint32');
+        meta.num_channels = fread(fid, 1, 'uint32');
         meta.channel_names = repmat({''}, meta.num_channels, 1);
         for ci = 1 : meta.num_channels
             str_size = fread(fid, 1, '*uint32');

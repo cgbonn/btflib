@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2014 University of Bonn
+% * Copyright 2015 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-10
 % *
 % * This file is part of btflib.
 % *
@@ -35,4 +35,5 @@ function signatures_map = ubo_btf_signatures()
     signatures_map('!FMF06FC') =            {'FMF', false}; % the above field
     signatures_map('!PVF06FCR') =           'PVF';
     signatures_map('!PVF06FC') =            'PVF';
+    signatures_map('!BDIF06R2!') =          {'BDI', true};
 end
