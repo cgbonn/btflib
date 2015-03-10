@@ -23,13 +23,13 @@
 % *
 % *************************************************************************
 %
-% Write decorrelated full matrix factorized (DFMF) BTF file in Bonn
-% University's binary format. In this format, the BTF's color values are
-% decorrelated in one of many alternative formats (e.g. the YUV color
-% space). Each of the resulting decorrelated color channels is then
-% arranged as a huge matrix which is factorized with an SVD. With this
-% method, better compression ratios can be obtained by storing fewer
-% components for some of the channels.
+% Write uncompressed bidirectional image files (BDI) in Bonn University's binary
+% format. A BDI file essentially stores the full BTF tensor in an ABRDF-wise
+% manner, along with meta data like the bidirectional sampling. Multiple ABRDFs
+% are put together into chunks. A chunk stores the ARBDFs corresponding to
+% several scan lines in texture space.
+% This function can in theory be used to write BDIs from non-BDI (i.e.
+% compressed) BTFs, as long as those provide a decode_abrdf method.
 function write_ubo_bdi(obj, fid)
     % some parameters
     if isfield(obj.meta, 'num_scan_lines_per_chunk')
@@ -37,7 +37,14 @@ function write_ubo_bdi(obj, fid)
     else
         num_scan_lines_per_chunk = 4;
     end
-    obj.meta.compression = 2; % 0: full uncompressed, 1: full bzipped, 2: sparse uncompressed
+    if isfield(obj.meta, 'compression')
+        compression = obj.meta.compression;
+    else
+        compression = 2; % sparse uncompressed
+    end
+    if compression ~= 2
+        error('only sparse uncompressed BDIs are supported at the moment.');
+    end
     abrdfs_per_chunk = obj.meta.width * num_scan_lines_per_chunk;
     abrdf_size = obj.meta.nL * obj.meta.nV * obj.meta.num_channels;
     
@@ -52,8 +59,8 @@ function write_ubo_bdi(obj, fid)
     fwrite(fid, obj.meta.height, 'uint32');
     
     fwrite(fid, num_scan_lines_per_chunk, 'uint32');
-    if obj.meta.compression ~= 1
-        fwrite(fid, obj.meta.compression, 'uint8');
+    if compression ~= 1
+        fwrite(fid, compression, 'uint8');
     end
     
     % write sparsity mask (indicates which ABRDFs are missing)

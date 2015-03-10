@@ -92,8 +92,7 @@ classdef btf < handle
         function obj = write(obj, file_name)
             % write binary BTF file
             %
-            % TODO: currently only writing of FMF and DFMF formats is
-            % implemented
+            % TODO: implement writing of PVFs
             fid = fopen(file_name, 'w');
             
             switch obj.format_str
@@ -104,9 +103,16 @@ classdef btf < handle
                 case 'FMF'
                     write_ubo_fmf(fid, obj.data, obj.meta);
                 otherwise
-                    error('BTF: writing is only implemented for (D)FMF format!');
+                    error('BTF: writing is only implemented for BDI or (D)FMF format!');
             end
             
+            fclose(fid);
+        end
+        
+        function obj = write_bdi(obj, file_name)
+            % write binary BDI file
+            fid = fopen(file_name, 'w');
+            obj.write_ubo_bdi(fid);
             fclose(fid);
         end
         
