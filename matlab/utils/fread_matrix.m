@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2014 University of Bonn
+% * Copyright 2015 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-10
 % *
 % * This file is part of btflib.
 % *
@@ -31,7 +31,8 @@
 % - fid is the file id provided by fopen(), the current reading position
 %   needs to be where the matrix starts
 % - scalar_type is a string describing the data class as understood by
-%   fread
+%   fread, this can also explicitly specify data type conversion, e.g.
+%   uint8=>logical
 % - rows and columns are the number of rows and columns that should be read
 % - columns_file is the actual number of columns that are stored in the
 %   file
@@ -40,11 +41,22 @@ function mat = fread_matrix(fid, scalar_type, rows, columns, columns_file)
         columns_file = columns;
     end
     
-    if scalar_type(1) ~= '*'
-        scalar_type = ['*', scalar_type];
+    % handle cases like 'uint8=>logical', i.e. explicit data type conversion
+    split_index = strfind(scalar_type, '=>');
+    if ~isempty(split_index)
+        scalar_type_mem = scalar_type(split_index + 2 : end);
+        scalar_type_file = scalar_type(1 : split_index - 1);
+    else
+        % if only 'uint8' is specified to fread, an implicit conversion to
+        % double occurs; to avoid this, we prepend '*'
+        if scalar_type(1) ~= '*'
+            scalar_type = ['*', scalar_type];
+        end
+        
+        % conversion defaults to scalar type in file
+        scalar_type_file = scalar_type(2 : end);
+        scalar_type_mem = scalar_type_file;
     end
-
-    size_of_scalar = sizeof(scalar_type);
 
     num_skipped_cols = columns_file - columns;
     if num_skipped_cols > 0
@@ -55,9 +67,12 @@ function mat = fread_matrix(fid, scalar_type, rows, columns, columns_file)
 %             mat(ri, :) = fread(fid, columns, scalar_type);
 %             fseek(fid, num_skipped_cols * size_of_scalar, 'cof');
 %         end
+
+        % get byte size of scalars in file
+        size_of_scalar = sizeof(scalar_type_file);
         
         mat = fread(fid, [rows, columns], ...
-            sprintf('%d*%s=>%s', columns, scalar_type(2:end), scalar_type(2:end)), ...
+            sprintf('%d*%s=>%s', columns, scalar_type_file, scalar_type_mem), ...
             num_skipped_cols * size_of_scalar);
         mat = reshape(mat, columns, rows)';
     else
