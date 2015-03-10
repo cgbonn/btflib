@@ -97,6 +97,8 @@ classdef btf < handle
             fid = fopen(file_name, 'w');
             
             switch obj.format_str
+                case 'BDI'
+                    obj.write_ubo_bdi(fid);
                 case 'DFMF'
                     write_ubo_dfmf(fid, obj.data, obj.meta);
                 case 'FMF'
