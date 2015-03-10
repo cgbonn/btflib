@@ -126,6 +126,7 @@ function [data, meta] = read_ubo_bdi(fid, signature, header_flag)
     
     % this mask indicates which of the chunks have been buffered by buffer_bdi
     data.chunks_buffered = false(1, meta.num_chunks);
+    data.num_chunks_in_buffer = 0;
     % disabling this leads to a hybrid mode where only those chunks that are not
     % buffered are read from file (this is still quite slow and therefore by
     % default only buffered data is displayed, whereas the rest is set black)

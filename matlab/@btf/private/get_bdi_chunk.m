@@ -25,7 +25,12 @@
 %
 % Decode a single ABRDF or buffer an entire chunk of ABRDFs from a bidirectional
 % image file (BDI).
-function abrdf = get_bdi_chunk(obj, chunk_index, x, y)
+function abrdf = get_bdi_chunk(obj, chunk_index, x, y, buffer_only)
+    % don't return the chunk, only store in object's buffer (avoids copying)
+    if ~exist('buffer_only', 'var')
+        buffer_only = true;
+    end
+    
     if exist('x', 'var') && exist('y', 'var') && ~isempty(x) && ~isempty(y)
         % extract only a single ABRDF
         [chunk_index, chunk_abrdf_index] = obj.get_bdi_chunk_index(x, y);
@@ -62,9 +67,9 @@ function abrdf = get_bdi_chunk(obj, chunk_index, x, y)
     
     % write the data directly into the buffer or return those chunks that don't
     % fit into memory
-    if chunk_index < obj.data.num_chunks_in_buffer    
+    if buffer_only && chunk_index < obj.data.num_chunks_in_buffer
         obj.data.chunks(:, chunk_index) = fread(obj.data.fid, read_size, '*uint16', 0);
-    elseif chunk_index == obj.data.num_chunks_in_buffer
+    elseif buffer_only && chunk_index == obj.data.num_chunks_in_buffer
         % the last chunk can be smaller than the rest, indexing into data.chunks
         % is slow, so we do it only here
         chunk = fread(obj.data.fid, read_size, '*uint16', 0);
