@@ -57,7 +57,7 @@ function img = decode_bdi_texture(obj, l, v)
             img(:, :, 1 : size(tmp, 3)) = tmp;
         end
         
-        if all(~obj.data.chunks_buffered) || ~obj.data.only_use_buffered
+        if obj.data.textures_from_file && ~obj.data.only_use_buffered
             % optionally fallback to reading from file for unbuffered chunks
             chunks_missing = find(~obj.data.chunks_buffered);
             obj.data.fid = fopen(obj.meta.file_name, 'r');
@@ -67,12 +67,13 @@ function img = decode_bdi_texture(obj, l, v)
                     min(max(obj.meta.abrdf_index_logical_to_storage), chunk_index * obj.meta.abrdfs_per_chunk);
                 logical_abrdf_inds = abrdf_index_storage_to_logical(storage_abrdf_inds);
 
-                fprintf('reading chunk %d / %d\n', chunk_index, obj.meta.num_chunks);
+                obj.progress(chunk_index / obj.meta.num_chunks, 'reading texture');
                 obj.data.current_chunk = reshape(obj.get_bdi_chunk(chunk_index), ...
                     obj.meta.num_channels, obj.meta.nL, obj.meta.nV, []);
                 img(:, logical_abrdf_inds) = squeeze(obj.data.current_chunk(:, l, v, :));
             end
             fclose(obj.data.fid);
+            obj.progress();
         end
     end
     % convert half precision floats to single precision floats

@@ -32,6 +32,7 @@ classdef btf < handle
         format_str; % string that is used to identify the BTF format
         data; % a struct that holds the components of compressed BTF files
         meta; % all other meta data stored in a struct
+        verbose = true; % enables some status output, when lengthy operations are performed
         
         quality; % a scalar in (0, 1] that defines the quality with which compressed btfs should be read from file
     end
@@ -40,10 +41,12 @@ classdef btf < handle
         % angular interpolation data structures
         TriL; % Delaunay triangulation of parabolic light sample coordinates
         TriV; % Delaunay triangulation of parabolic view sample coordinates
+        
+        progress_fcn; % function handle to display updates for lengthy processes
     end
     
     methods (Access = public)
-        function obj = btf(file_name, quality)
+        function obj = btf(file_name, quality, progress_callback)
             % btf constructor, which currently only supports construction by reading the data from file
             %
             % The quality flag, which is a float in (0, 1] determines how
@@ -57,6 +60,12 @@ classdef btf < handle
                 obj.quality = 1;
             else
                 obj.quality = quality;
+            end
+            
+            if ~exist('progress_callback', 'var')
+                obj.progress_fcn = @obj.default_progress_fcn;
+            else
+                obj.progress_fcn = progress_callback;
             end
             
             obj = obj.read(file_name);
@@ -116,6 +125,10 @@ classdef btf < handle
             fclose(fid);
         end
         
+        function bdi = is_bdi(obj)
+            bdi = strcmp(obj.format_str, 'BDI');
+        end
+        
         function obj = buffer_bdi(obj, max_free_mem_percentage)
             % attempt to buffer as many ABRDF chunks from a BDI to memory;
             % optionally a fraction can be specified of the available memory
@@ -149,27 +162,57 @@ classdef btf < handle
             % read chunks from file
             obj.data.fid = fopen(obj.meta.file_name, 'r');
             for c = 1 : obj.data.num_chunks_in_buffer - 1
-                fprintf('reading chunk %d / %d (total: %d)\n', ...
-                    c, obj.data.num_chunks_in_buffer, obj.meta.num_chunks);
+                obj.progress(c / obj.data.num_chunks_in_buffer, ...
+                    sprintf('(reading chunk %d / %d, %d total)', ...
+                    c, obj.data.num_chunks_in_buffer, obj.meta.num_chunks));
                 obj.get_bdi_chunk(c);
             end
             c = obj.data.num_chunks_in_buffer;
             % handle last chunk separately because it is usually smaller, but
             % indexing the memory chunks in each of the above iterations would
             % strongly reduce performance
+            obj.progress(c / obj.data.num_chunks_in_buffer, ...
+                sprintf('(reading chunk %d / %d, %d total)', ...
+                c, obj.data.num_chunks_in_buffer, obj.meta.num_chunks));
             obj.get_bdi_chunk(c);
             fclose(obj.data.fid);
+            obj.data.chunks_buffered = false(1, obj.meta.num_chunks);
             obj.data.chunks_buffered(1 : obj.data.num_chunks_in_buffer) = true;
+            obj.progress();
+        end
+        
+        function obj = clear_buffer(obj)
+            % clears BDI buffer to free memory
+            if obj.is_bdi()
+                obj.data.num_chunks_in_buffer = 0;
+                obj.data.chunks_buffered(:) = false;
+                obj.data.buffer = [];
+            end
+        end
+        
+        function buffered = is_buffered(obj)
+            % checks if BDI is buffered (BTFs are always fully buffered, hence
+            % the default true)
+            buffered = true;
+            if obj.is_bdi()
+                buffered = ~all(~obj.data.chunks_buffered);
+            end
         end
         
         function obj = only_use_buffered(obj, value)
             % if a bdi is partially buffered, setting this to true will tell the
             % decoder to ignore those pixels that aren't buffered, otherwise, it
             % will (slowly) read those missing pixel from file
-            if ~strcmp(obj.format_str, 'BDI')
-                error('this only works with BDIs. non-BDIs are always fully loaded to memory.');
+            if obj.is_bdi()
+                obj.data.only_use_buffered = logical(value(1));
             end
-            obj.data.only_use_buffered = logical(value(1));
+        end
+        
+        function obj = textures_from_file(obj, value)
+            % enable or disable loading textures from file for BDIs
+            if obj.is_bdi()
+                obj.data.textures_from_file = logical(value(1));
+            end
         end
         
         function obj = set_data(obj, data)
@@ -377,6 +420,47 @@ classdef btf < handle
             % TODO: implement extraction of the full data tensor arranged as a
             % 6-dimensional array (or 7D if the color channels aren't unrolled)
             error('not implemented yet!');
+        end
+        
+        function obj = set_verbose(obj, verbose)
+            % toggle object's verbosity; at the moment this only enables or
+            % disables calls to the object's status callback
+            obj.verbose = logical(verbose(1));
+        end
+        
+        function obj = set_progress_callback(obj, progress_callback)
+            % set a progress callback function, that is called whenever there is
+            % an update in a lengthy process; the handle needs to be to a
+            % function that takes two parameters, the first one is a scalar
+            % between 0 and 1, indicating a percentage, the second one is an
+            % string containing a short description of the process; the function
+            % also needs to be able to be called without any arguments, which
+            % can be used to hide gui elements related to the progress display
+            obj.progress_fcn = progress_callback;
+        end
+        
+        function progress(obj, value, str)
+            % this function is called by members of btf objects to send out
+            % status updates
+            if obj.verbose
+                if exist('value', 'var')
+                    obj.progress_fcn(value, str);
+                else
+                    obj.progress_fcn();
+                end
+            end
+        end
+        
+        function default_progress_fcn(value, str)
+            % this is just a very simple function for displaying progress
+            % updates on the matlab prompt
+            if ~exist('str', 'var')
+                str = '';
+            end
+            
+            if exist('value', 'var')
+                fprintf('%03.2%% (%s)...\n', 100 * value, str);
+            end
         end
     end
     
