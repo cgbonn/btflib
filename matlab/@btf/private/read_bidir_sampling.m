@@ -33,7 +33,7 @@ function meta = read_bidir_sampling(fid, meta)
         V(vi, :) = fread(fid, 2, 'single');
         num_lights = fread(fid, 1, 'uint32');
         if (isempty(L))
-            L = fread_matrix(fid, 'single', num_lights, 2);
+            L = utils.fread_matrix(fid, 'single', num_lights, 2);
             meta.num_lights = num_lights;
         elseif (num_lights ~= meta.num_lights)
             error('currently only fixed light hemisphere allowed!!');
@@ -43,8 +43,8 @@ function meta = read_bidir_sampling(fid, meta)
     end
     clear v num_lights;
 
-    meta.L = sph2cart2(L);
-    meta.V = sph2cart2(V);
+    meta.L = utils.sph2cart2(L);
+    meta.V = utils.sph2cart2(V);
     
     meta.nL = size(L, 1);
     meta.nV = size(V, 1);

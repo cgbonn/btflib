@@ -47,7 +47,7 @@ function [data, meta] = read_ubo_fmf(fid, signature, header_flag, quality)
         image_size = fread(fid, 2, 'uint32');
 
         if prod(image_size) > 0
-            data.height_map = fread_matrix(fid, 'uint16', image_size(1), image_size(2));
+            data.height_map = utils.fread_matrix(fid, 'uint16', image_size(1), image_size(2));
             data.height_map = halfprecision(data.height_map, 'single');
         end
     end
@@ -80,14 +80,14 @@ function [data, meta] = read_ubo_fmf(fid, signature, header_flag, quality)
     num_cols = fread(fid, 1, 'uint32');
 
     % singular values
-    data.S = fread_scalars(fid, num_components, data_type);
+    data.S = utils.fread_scalars(fid, num_components, data_type);
     fseek(fid, num_components_not_loaded * scalar_size, 'cof');
 
     % left singular vectors
-    data.U = fread_matrix(fid, data_type, num_rows, num_components, num_components_file);
+    data.U = utils.fread_matrix(fid, data_type, num_rows, num_components, num_components_file);
 
     % right singular vectors (multiplied by singular values)
-    data.SxV = fread_matrix(fid, data_type, num_cols, num_components, num_components_file);
+    data.SxV = utils.fread_matrix(fid, data_type, num_cols, num_components, num_components_file);
     
     % convert from half precision floats if necessary
     if scalar_size == 2

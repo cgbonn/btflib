@@ -40,7 +40,7 @@ function [data, meta] = read_ubo_pvf(fid, signature, quality)
         meta = read_bidir_sampling(fid, meta);
     else
         % currently used PVF format
-        fseek(fid, -sizeof('int32'), 'cof');
+        fseek(fid, -utils.sizeof('int32'), 'cof');
         meta = read_common_header(fid, signature);
         num_components_in_file = fread(fid, 1, 'uint32');
         num_view_slots = fread(fid, 1, 'uint32');
@@ -67,11 +67,11 @@ function [data, meta] = read_ubo_pvf(fid, signature, quality)
         num_components_not_loaded = num_components_file - num_components;
 
         % read PCA eigenvalues, the subtracted mean, principal components and weights
-        data.EVs{v} = fread_scalars(fid, num_components, data_type);
+        data.EVs{v} = utils.fread_scalars(fid, num_components, data_type);
         fseek(fid, num_components_not_loaded * scalar_size, 'cof');
-        data.Ms{v} = fread_scalars(fid, dimension, data_type);
-        data.Cs{v} = fread_matrix(fid, data_type, dimension, num_components, num_components_file);
-        data.Ws{v} = fread_matrix(fid, data_type, num_weights, num_components, num_components_file);
+        data.Ms{v} = utils.fread_scalars(fid, dimension, data_type);
+        data.Cs{v} = utils.fread_matrix(fid, data_type, dimension, num_components, num_components_file);
+        data.Ws{v} = utils.fread_matrix(fid, data_type, num_weights, num_components, num_components_file);
         
         % convert from half precision floats if necessary
         if scalar_size == 2

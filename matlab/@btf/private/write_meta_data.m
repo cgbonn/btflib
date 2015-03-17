@@ -39,25 +39,25 @@ function write_meta_data(fid, meta)
     light_source(1 : numel(meta.light_source)) = meta.light_source;
         
     % predict the number of bytes of the whole meta data chunk
-    size_bytes = sizeof('uint32') + sizeof(struct_version) + ...
+    size_bytes = utils.sizeof('uint32') + utils.sizeof(struct_version) + ...
         numel(meta.measurement_setup) + ...
         numel(meta.image_sensor) + ...
         numel(meta.light_source) + ...
-        sizeof(meta.ppmm) + ...
-        sizeof(meta.rgb_scale_factor);
+        utils.sizeof(meta.ppmm) + ...
+        utils.sizeof(meta.rgb_scale_factor);
     
     if struct_version > 1
-        size_bytes = size_bytes + sizeof(meta.cosine_flag);
+        size_bytes = size_bytes + utils.sizeof(meta.cosine_flag);
     end
         
     if struct_version > 2
-        size_bytes = size_bytes + sizeof('uint32') + numel(meta.xml);
+        size_bytes = size_bytes + utils.sizeof('uint32') + numel(meta.xml);
     end
     
     if struct_version > 3
-        size_bytes = size_bytes + sizeof('uint32');
+        size_bytes = size_bytes + utils.sizeof('uint32');
         for c = 1 : numel(meta.channel_names)
-            size_bytes = size_bytes + sizeof('uint32') + numel(meta.channel_names{c});
+            size_bytes = size_bytes + utils.sizeof('uint32') + numel(meta.channel_names{c});
         end
     end
     

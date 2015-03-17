@@ -47,6 +47,6 @@ function dirs = add_bottom_ring(dirs)
         dirs_bottom_ring_sph = [polar, azimuth];
         
         % convert to cartesian coordinates
-        dirs = [dirs; sph2cart2(dirs_bottom_ring_sph)];
+        dirs = [dirs; utils.sph2cart2(dirs_bottom_ring_sph)];
     end
 end

@@ -60,13 +60,13 @@ function [data, meta] = read_ubo_bdi(fid, signature, header_flag)
     end
 
     % this mask indicates which ABRDFs are missing
-    meta.mask = fread_matrix(fid, 'uint8=>logical', meta.width, meta.height);
+    meta.mask = utils.fread_matrix(fid, 'uint8=>logical', meta.width, meta.height);
 
     % read rotations (if any)
     if strcmp(signature(end), 'R') || strcmp(signature(end - 2), 'R')
         meta.num_rotations = double(fread(fid, 1, 'uint32'));
         if (meta.num_rotations > 0)
-            meta.rotations = fread_matrix(fid, 'float', meta.num_rotations, 3, 3);
+            meta.rotations = utils.fread_matrix(fid, 'float', meta.num_rotations, 3, 3);
         end
     else
         meta.num_rotations = 0;

@@ -141,18 +141,18 @@ classdef btf < handle
                 max_free_mem_percentage = 0.9;
             end
             
-            mem_available = floor(freemem() * max_free_mem_percentage);
+            mem_available = floor(utils.freemem() * max_free_mem_percentage);
             
-            mem_required = obj.meta.chunk_size * obj.meta.num_chunks * sizeof('uint16');
+            mem_required = obj.meta.chunk_size * obj.meta.num_chunks * utils.sizeof('uint16');
             if mem_required > mem_available
                 obj.data.num_chunks_in_buffer = floor(obj.meta.num_chunks * mem_available / mem_required);
             else
                 obj.data.num_chunks_in_buffer = obj.meta.num_chunks;
             end
             
-            if mem_available < obj.meta.chunk_size * sizeof('uint16')
+            if mem_available < obj.meta.chunk_size * utils.sizeof('uint16')
                 obj.data.num_chunks_in_buffer = 0;
-                error('too little memory available for buffering, one chunk requires %3.2f MB', obj.meta.chunk_size * sizeof('uint16') / 1024 / 1024);
+                error('too little memory available for buffering, one chunk requires %3.2f MB', obj.meta.chunk_size * utils.sizeof('uint16') / 1024 / 1024);
             end
             
             % allocate memory
@@ -262,8 +262,8 @@ classdef btf < handle
         function [lin, laz, vin, vaz] = inds_to_angles(obj, l, v)
             % given light and view indices, return the light inclination and
             % azimuth, as well as the view inclination and azimuth angles
-            l_sph = cart2sph2(obj.meta.L(l, :));
-            v_sph = cart2sph2(obj.meta.V(v, :));
+            l_sph = utils.cart2sph2(obj.meta.L(l, :));
+            v_sph = utils.cart2sph2(obj.meta.V(v, :));
             lin = l_sph(1);
             laz = l_sph(2);
             vin = v_sph(1);
@@ -480,13 +480,13 @@ classdef btf < handle
             % then have a margin around our triangulation in which we
             % couldn't determine any enclosing triangles for queried
             % directions)
-            L = add_bottom_ring(L);
-            V = add_bottom_ring(V);
+            L = utils.add_bottom_ring(L);
+            V = utils.add_bottom_ring(V);
             
             % set up Delaunay trianglulation of parabolic map of both light
             % and view directions
-            L_par = cart2par(L);
-            V_par = cart2par(V);
+            L_par = utils.cart2par(L);
+            V_par = utils.cart2par(V);
             obj.TriL = delaunayTriangulation(L_par);
             obj.TriV = delaunayTriangulation(V_par);
         end
@@ -496,8 +496,8 @@ classdef btf < handle
             
             % transform input directions to parabolic coordinates
             if numel(L) == 3 && numel(V) == 3
-                L_par = cart2par(L);
-                V_par = cart2par(V);
+                L_par = utils.cart2par(L);
+                V_par = utils.cart2par(V);
             elseif numel(L) == 2 && numel(V) == 2
                 % we assume L and V to be in parabolic coordinates already!
                 % unfortunately, there is no sane way to distinguish those

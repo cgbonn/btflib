@@ -107,7 +107,7 @@ function write_ubo_bdi(obj, fid)
         end
         
         fprintf('writing to file...\n');
-        fwrite(fid, numel(chunk)  * sizeof('uint16'), 'uint32');
+        fwrite(fid, numel(chunk)  * utils.sizeof('uint16'), 'uint32');
         fwrite(fid, typecast(chunk(:), 'uint8'), 'uint8');
     end
     fclose(obj.data.fid);

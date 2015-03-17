@@ -39,7 +39,7 @@ function [data, meta] = read_ubo_dfmf(fid, signature, quality)
     meta.num_components = double(fread(fid, 1, 'uint32'));
     meta.color_model = fread(fid, 1, 'int32');
     meta.color_mean = fread(fid, 3, 'single');
-    meta.color_transformation_matrix = fread_matrix(fid, 'single', 3, 3);
+    meta.color_transformation_matrix = utils.fread_matrix(fid, 'single', 3, 3);
 
     % read compontens
     data.S = cell(meta.num_channels, 1);
@@ -59,14 +59,14 @@ function [data, meta] = read_ubo_dfmf(fid, signature, quality)
         num_cols = fread(fid, 1, 'uint32');
         
         % singular values
-        data.S{c} = fread_scalars(fid, num_components, data_type);
+        data.S{c} = utils.fread_scalars(fid, num_components, data_type);
         fseek(fid, num_components_not_loaded * scalar_size, 'cof');
         
         % left singular vectors
-        data.U{c} = fread_matrix(fid, data_type, num_rows, num_components, num_components_file);
+        data.U{c} = utils.fread_matrix(fid, data_type, num_rows, num_components, num_components_file);
         
         % right singular vectors (multiplied with singular values)
-        data.SxV{c} = fread_matrix(fid, data_type, num_cols, num_components, num_components_file);
+        data.SxV{c} = utils.fread_matrix(fid, data_type, num_cols, num_components, num_components_file);
         
         % convert from half precision floats if necessary
         if (scalar_size == 2)
