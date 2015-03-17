@@ -50,9 +50,6 @@ function abrdf = get_bdi_chunk(obj, chunk_index, x, y, buffer_only)
         % data is stored as half precision floats (which are stored as
         % uin16 in matlab)
         abrdf_byte_size = obj.meta.abrdf_size * sizeof('uint16');
-        if chunk_abrdf_index == 0
-            1;
-        end
         file_offset = file_offset + (chunk_abrdf_index - 1) * abrdf_byte_size;
         
         read_size = obj.meta.abrdf_size;
