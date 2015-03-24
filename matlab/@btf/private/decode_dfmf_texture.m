@@ -42,7 +42,7 @@ function img = decode_dfmf_texture(obj, l, v)
     % determine transposition of BTF-matrix
     img = zeros(h * w, nC, obj.data.class);
     if size(U{1}, 1) == nL * nV
-        % imgs stacked column-wise
+        % abrdfs stacked column-wise
         lvInd = sub2ind([nL, nV], l, v);
         for c = 1 : nC
             img(:, c) = SxV{c} * U{c}(lvInd, :)';

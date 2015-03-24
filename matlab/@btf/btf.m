@@ -125,6 +125,42 @@ classdef btf < handle
             fclose(fid);
         end
         
+        function obj = crop(obj, roi, strides)
+            % apply a region of interest to a BTF or BDI
+            if ~exist('strides', 'var')
+                strides = [1; 1];
+            end
+            
+            roi = round(roi);
+            strides = round(strides);
+            
+            % assert roi is compatible with BTF dimensions
+            roi(1, 1) = max(1, min(obj.meta.width, roi(1, 1)));
+            roi(1, 2) = max(roi(1, 1), min(obj.meta.width, roi(1, 2)));
+            roi(2, 1) = max(1, min(obj.meta.height, roi(2, 1)));
+            roi(2, 2) = max(roi(2, 1), min(obj.meta.height, roi(2, 2)));
+            
+            % and also ensure that the strides are not too large
+            roi_dims = roi(:, 2) - roi(:, 1) + 1;
+            strides(1) = max(1, min(roi_dims(1), strides(1)));
+            strides(2) = max(1, min(roi_dims(2), strides(2)));
+            
+            % apply roi to data matrices
+            switch obj.format_str
+                case 'BDI'
+                    obj = obj.crop_bdi(roi, strides);
+                case 'DFMF'
+                    obj = obj.crop_dfmf(roi, strides);
+                case 'FMF'
+                    obj = obj.crop_fmf(roi, strides);
+                case 'PVF'
+                    obj = obj.crop_pvf(roi, strides);
+            end
+            
+            obj.meta.width = roi_dims(1);
+            obj.meta.height = roi_dims(2);
+        end
+        
         function bdi = is_bdi(obj)
             bdi = strcmp(obj.format_str, 'BDI');
         end
@@ -397,7 +433,7 @@ classdef btf < handle
                 end
                 
                 % rearrange as image
-                img = reshape(img, [obj.meta.width, obj.meta.height, obj.meta.num_channels]);
+                img = reshape(img, [obj.meta.height, obj.meta.width, obj.meta.num_channels]);
             elseif numel(L) == 2 && numel(V) == 2 || numel(L) == 3 && numel(V) == 3
                 % access via light and view directions -> interpolate samples
                 img = zeros(obj.meta.width, obj.meta.height, obj.meta.num_channels, obj.data.class);
