@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -50,7 +50,6 @@ function abrdf = decode_dfmf_abrdf(obj, x, y)
     elseif size(U{1},1) == h * w
         % images stacked column-wise
         xyInd = sub2ind([w, h], x, y);
-        warning('this is untested code!');
         for c = 1 : nC
             abrdf(:,c) = SxV{c} * U{c}(xyInd, :)';
         end

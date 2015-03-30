@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -26,7 +26,7 @@
 % Generate a map that assigns a format string to each unique file signature
 % string. Furthermore, for some signatures an additional flag is set that
 % determines behaviour when reading the file.
-function signatures_map = ubo_btf_signatures()
+function [signatures_map, formats] = ubo_btf_signatures()
     % those are all currently supported file signatures for Uni Bonn BTFs
     signatures_map = containers.Map();
     signatures_map('!DFMF08FCR') =          'DFMF';
@@ -36,4 +36,8 @@ function signatures_map = ubo_btf_signatures()
     signatures_map('!PVF06FCR') =           'PVF';
     signatures_map('!PVF06FC') =            'PVF';
     signatures_map('!BDIF06R2!') =          {'BDI', true};
+    
+    if nargout > 1
+        formats = {'BDI', 'DFMF', 'FMF', 'PVF'};
+    end
 end

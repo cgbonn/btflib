@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -26,10 +26,10 @@
 % Read bidirectional sampling to a file in one of Bonn University's binary
 % formats.
 function meta = read_bidir_sampling(fid, meta)
-    meta.num_views = fread(fid, 1, 'uint32');
-    V = zeros(meta.num_views, 2);
+    meta.nV = fread(fid, 1, 'uint32');
+    V = zeros(meta.nV, 2);
     L = [];
-    for vi = 1 : meta.num_views
+    for vi = 1 : meta.nV
         V(vi, :) = fread(fid, 2, 'single');
         num_lights = fread(fid, 1, 'uint32');
         if (isempty(L))
@@ -47,5 +47,4 @@ function meta = read_bidir_sampling(fid, meta)
     meta.V = utils.sph2cart2(V);
     
     meta.nL = size(L, 1);
-    meta.nV = size(V, 1);
 end

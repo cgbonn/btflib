@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -39,7 +39,7 @@ function img = decode_pvf_texture(obj, l, v)
     if size(Cs{1}, 1) == nC * nL
         % light fields stacked column-wise
         clInds = sub2ind([nC, nL], 1 : nC, repmat(l, 1, nC));
-        img = permute(reshape(Ws{v} * Cs{v}(clInds, :)' + Ms{v}(clInds)', [w, h, nC]), [2, 1, 3]);
+        img = permute(reshape(Ws{v} * Cs{v}(clInds, :)' + repmat(Ms{v}(clInds)', h * w, 1), [w, h, nC]), [2, 1, 3]);
     elseif size(Cs{1}, 1) == nC * h * w
         % images stacked column-wise
         img = permute(reshape(Cs{v} * Ws{v}(l, :)' + Ms{v}, [nC, w, h]), [3,2,1]);

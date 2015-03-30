@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -41,7 +41,7 @@ function img = decode_bdi_texture(obj, l, v)
     
     if all(obj.data.chunks_buffered)
         % full BDI in buffer
-        tmp = reshape(obj.data.chunks(clvxy_inds, :), [n_c, obj.meta.width, obj.meta.height]);
+        tmp = reshape(obj.data.chunks(clvxy_inds, :), n_c, obj.meta.width, []);
         tmp = tmp(:, obj.meta.abrdf_index_logical_to_storage ~= -1);
         img(:, obj.meta.mask) = tmp;
     else

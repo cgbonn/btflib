@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -47,7 +47,7 @@ function img = decode_dfmf_texture(obj, l, v)
         for c = 1 : nC
             img(:, c) = SxV{c} * U{c}(lvInd, :)';
         end
-    elseif size(U, 1) == h * w
+    elseif size(U{1}, 1) == h * w
         % images stacked column-wise
         lvInd = sub2ind([nL, nV], l, v);
         for c = 1 : nC
