@@ -42,7 +42,7 @@ function [data, meta] = read_ubo_dfmf(fid, signature, quality)
     meta.color_transformation_matrix = utils.fread_matrix(fid, 'single', 3, 3);
 
     % read compontens
-    data.S = zeros(meta.num_channels, 1);
+    data.S = cell(meta.num_channels, 1);
     data.U = cell(meta.num_channels, 1);
     data.SxV = cell(meta.num_channels, 1);
     for c = 1 : meta.num_channels
@@ -59,7 +59,7 @@ function [data, meta] = read_ubo_dfmf(fid, signature, quality)
         num_cols = fread(fid, 1, 'uint32');
         
         % singular values
-        data.S(c) = utils.fread_scalars(fid, num_components, data_type);
+        data.S{c} = utils.fread_scalars(fid, num_components, data_type);
         fseek(fid, num_components_not_loaded * scalar_size, 'cof');
         
         % left singular vectors
