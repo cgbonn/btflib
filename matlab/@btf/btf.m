@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-10
+% * last modification date: 2015-03-30
 % *
 % * This file is part of btflib.
 % *
@@ -27,6 +27,8 @@
 % Bidirectional Texture Functions (BTFs). The binary file formats that are
 % currently supported by the class are those used in the BTFDBB at Bonn
 % University (http://cg.cs.uni-bonn.de/en/projects/btfdbb/).
+% This class also allows to create BTF objects from data already stored in
+% memory.
 classdef btf < handle
     properties (GetAccess = public, SetAccess = protected)
         format_str; % string that is used to identify the BTF format
@@ -38,41 +40,152 @@ classdef btf < handle
     end
     
     properties (Access = protected)
-        % angular interpolation data structures
-        TriL; % Delaunay triangulation of parabolic light sample coordinates
-        TriV; % Delaunay triangulation of parabolic view sample coordinates
+        TriL; % Delaunay triangulation of parabolic light sample coordinates used for angular interpolation
+        TriV; % Delaunay triangulation of parabolic view sample coordinates used for angular interpolation
         
         progress_fcn; % function handle to display updates for lengthy processes
     end
     
     methods (Access = public)
-        function obj = btf(file_name, quality, progress_callback)
-            % btf constructor, which currently only supports construction by reading the data from file
+        function obj = btf(varargin)
+            % btf constructor, which either reads data from file or directly from memory
             %
-            % The quality flag, which is a float in (0, 1] determines how
+            % obj = btf(file_name, ...)
+            % obj = btf(format_str, meta_struct, data_struct, ...)
+            %
+            % When reading from file, the first argument is a file name or a
+            % full path to a file.
+            %
+            % When the object is constructed from data in memory, the first
+            % argument is a string specifying the BTF format. Currently
+            % supported are BDI, DFMF, FMF, PVF. The following two arguments are
+            % structs containing first the meta data and second the actual BTF
+            % data, which is either provided as a full BDI tensor (or
+            % re-arranged matrix), or as the components of a compressed BTF
+            % matrix (FMF, DFMF, PVF), e.g. the U and SxV matrices of a FMF. The
+            % exact required format of  the structs is specified below.
+            %
+            % There are some general parameters that can be specified as
+            % name-value pairs:
+            %
+            % The 'quality' parameter, which is a float in (0, 1] determines how
             % much of the compressed data is read from file and thereby
-            % determines the quality of reconstructed color values, e.g. in
-            % the case of matrix factorizations this determines how many
-            % components of a truncated SVD should be loaded.
+            % determines the quality of reconstructed color values, e.g. in the
+            % case of matrix factorizations this determines how many components
+            % of a truncated SVD should be loaded.
+            % It is possible to provide a function handle that is called to
+            % provide progress information to the user for lengthy processes.
+            % This can be achieved by providing a function handle for the
+            % 'progress_callback' parameter.
             %
-            % TODO: implement construction from data and meta data structs
-            if ~exist('quality', 'var')
-                obj.quality = 1;
-            else
-                obj.quality = quality;
-            end
+            % Format of the meta data struct, listed are the field names, their
+            % default values in braces, the requirements for their values and
+            % in square brackets the BTF formats the fields are applicable to
+            % (all, if nothing is specified):
+            %
+            % width (-1): isscalar(x) && isnumeric(x) && x > 0
+            % height (-1): isscalar(x) && isnumeric(x) && x > 0
+            % num_lights (151): isscalar(x) && isnumeric(x) && x > 0
+            % num_views (151): isscalar(x) && isnumeric(x) && x > 0
+            % num_channels (3), isscalar(x) && isnumeric(x) && x > 0
+            % light_dirs ([]): isnumeric(x) && size(x, 2) == 3
+            % view_dirs ([]): isnumeric(x) && size(x, 2) == 3
+            % cosine_flag (false): isscalar(x) && islogical(x)
+            % dynamic_range_reduction_method (0): iscalar(x) && isnumeric(x)
+            % color_model (0): isnumeric(x) && isscalar(x); [DFMF]; see btf.undecorrelate
+            % color_mean ([0, 0, 0]): isnumeric(x); [DFMF]
+            % color_transformation_matrix (eye(3)): isnumeric(x); [DFMF]
+            %
+            % If num_lights == 151 and num_views == 151, light_dirs and
+            % view_dirs become optional, as the default UBO Dome 1 sampling is
+            % applied if no light or view directions are provided.
+            %
+            % The format of the data struct depends on the BTF format:
+            % BDI:
+            % chunks (required): this array either needs to be a tensor with
+            %	dimensions nC x nL x nV x w x h or a matrix with dimensions (nC
+            %	* nL * nV) x (w * h) or a matrix with dimensions (nC * nL * nV *
+            %	w * S) x P, where S is the number of scan lines per data chunk
+            %	and P equals ceil(h / S)
+            %
+            % DFMF:
+            % U (required): cell array with number of elements equal to the
+            %	channels in the used color model; each element of U must be a (h
+            %	* w) x P or a (nL * nV) x P matrix, where P is the number of PCA
+            %	components in each channel
+            % SxV (required): cell array as above, only that the matrix
+            %	dimensions for each element are the respectively other than
+            %	those in U (if U is (h * w) x P, than SxV must be (nL * nV) x P)
+            % S (optional): P x 1 array containing the singular values (unused
+            %	at the moment and can thus be savely omitted)
+            %
+            % FMF:
+            % U (required): matrix with dimensions (nC * w * h) x P or (nC * nL
+            %	* nV) x P, where P is the number of PCA components
+            % SxV (required): matrix with dimensions: if U is (nC * w * h) x P,
+            %	then SxV must be (w * h) x P, if U is (nC * nL * nV) x P, then
+            %	SxV must be (w * h) x P
+            % S (optional): P x 1 array of singular values(unused at the moment
+            %	and can thus be savely omitted)
+            %
+            % PVF:
+            % Cs (required): cell array with nV elements, where each element is
+            %	a (nC * nL) x P or a (nC * h * w) x P matrix, where P is the
+            %	number of PCA components per view slot; those are the PCA
+            %	coefficients
+            % Ws (required): cell array with nV elements, where each element is
+            %	a matrix; if Cs{v} is a (nC * h * w) x P matrix, then Ws{v} must
+            %	be a nL x P matrix; if Cs{v} is a (nC * nL) x P matrix, then
+            %	Ws{v} must be a (w * h) x P matrix; those are the PCA weights
+            % Ms (required): cell array with nV elements, where each element is
+            %	a vector whose length corresponds to the number of rows of the
+            %	elements of Cs (if e.g. Cs{v} is a (nC * nL) x P matrix, then
+            %	Ms{v} must be a vector with nC * nL elements); those are the
+            %	column means of each view slot matrix
+            % EVs (optional): cell array with vectors containing the eigenvalues
+            %	for each view slot
+            p = inputParser;
+            p.StructExpand = false;
+            p.addParameter('quality', 1, @(x) iscalar(x) && isnumeric(x));
+            p.addParameter('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
             
-            if ~exist('progress_callback', 'var')
-                obj.progress_fcn = @obj.default_progress_fcn;
+            file_name = varargin{1};
+            if ischar(file_name) && exist(file_name, 'file')
+                varargin = varargin(2 : end);
+                p.parse(varargin{:});
+                obj.quality = p.Results.quality;
+                obj.progress_fcn = p.Results.progress_callback;
+                
+                % read from file
+                obj = obj.read(file_name);
             else
-                obj.progress_fcn = progress_callback;
+                % create btf object directly from data
+                [~, supported_formats] = ubo_btf_signatures();
+                p.addRequired('format_str', @(x) any(validatestring(x, supported_formats)));
+                p.addRequired('meta', @isstruct);
+                p.addRequired('data', @(x) isstruct(x) || isnumeric(x));
+                p.parse(varargin{:});
+                obj.format_str = p.Results.format_str;
+                obj.quality = p.Results.quality;
+                obj.progress_fcn = p.Results.progress_callback;
+                
+                obj.meta.file_name = '';
+                
+                switch obj.format_str
+                    case 'BDI'
+                        obj.create_ubo_bdi(p.Results.meta, p.Results.data);
+                    case 'DFMF'
+                        obj.create_ubo_dfmf(p.Results.meta, p.Results.data);
+                    case 'FMF'
+                        obj.create_ubo_fmf(p.Results.meta, p.Results.data);
+                    case 'PVF'
+                        obj.create_ubo_pvf(p.Results.meta, p.Results.data);
+                end
             end
-            
-            obj = obj.read(file_name);
         end
         
         function obj = read(obj, file_name)
-            % read binary BTF file
+            % load binary BTF file
             fid = fopen(file_name, 'r');
             [obj.format_str, header_flag, signature] = identify_signature(fid);
             frewind(fid);
@@ -94,12 +207,13 @@ classdef btf < handle
 
             fclose(fid);
 
-            obj.meta.file_name = file_name;
+            % store full path
+            obj.meta.file_name = which(file_name);
             obj = obj.init_dirs();
         end
         
         function obj = write(obj, file_name)
-            % write binary BTF file
+            % save binary BTF file
             %
             % TODO: implement writing of PVFs
             fid = fopen(file_name, 'w');
@@ -162,6 +276,7 @@ classdef btf < handle
         end
         
         function bdi = is_bdi(obj)
+            % check if the object is a uncompressed BDI
             bdi = strcmp(obj.format_str, 'BDI');
         end
         
@@ -227,8 +342,8 @@ classdef btf < handle
         end
         
         function buffered = is_buffered(obj)
-            % checks if BDI is buffered (BTFs are always fully buffered, hence
-            % the default true)
+            % checks if BDI is buffered
+            % (BTFs are always fully buffered, hence the default true)
             buffered = true;
             if obj.is_bdi()
                 buffered = ~all(~obj.data.chunks_buffered);
@@ -236,6 +351,7 @@ classdef btf < handle
         end
         
         function obj = only_use_buffered(obj, value)
+            % only use buffered data for a BDI, don't read from file
             % if a bdi is partially buffered, setting this to true will tell the
             % decoder to ignore those pixels that aren't buffered, otherwise, it
             % will (slowly) read those missing pixel from file
@@ -248,33 +364,6 @@ classdef btf < handle
             % enable or disable loading textures from file for BDIs
             if obj.is_bdi()
                 obj.data.textures_from_file = logical(value(1));
-            end
-        end
-        
-        function obj = set_data(obj, data)
-            % very simple setter method for changing the compressed BTF data
-            % TODO: perform sanity checks depending on the format!
-            obj.data = data;
-        end
-        
-        function obj = set_meta(obj, varargin)
-            % setter method for changing meta data
-            %
-            % arguments can either be a single struct containing all
-            % necessary fields, or an arbitrary number of key-value pairs
-            % that will be used to update or add fields in the existing
-            % meta data struct
-            if numel(varargin) == 1
-                % replace the full meta data struct
-                obj.meta = varargin{1};
-            else
-                % we expect key-value pairs in varargin
-                assert(mod(numel(varargin), 2) == 0);
-                for a = 1 : 2 : numel(varargin)
-                    key = varargin{a};
-                    value = varargin{a + 1};
-                    obj.meta.(key) = value;
-                end
             end
         end
         
@@ -296,8 +385,7 @@ classdef btf < handle
         end
         
         function [lin, laz, vin, vaz] = inds_to_angles(obj, l, v)
-            % given light and view indices, return the light inclination and
-            % azimuth, as well as the view inclination and azimuth angles
+            % given light and view indices, return the light & view inclination and azimuth angles
             l_sph = utils.cart2sph2(obj.meta.L(l, :));
             v_sph = utils.cart2sph2(obj.meta.V(v, :));
             lin = l_sph(1);
@@ -453,50 +541,28 @@ classdef btf < handle
         end
         
         function tensor = get_6d_tensor(obj)
-            % TODO: implement extraction of the full data tensor arranged as a
-            % 6-dimensional array (or 7D if the color channels aren't unrolled)
+            % TODO: implement extraction of the full data tensor
+            % this should return a 6-dimensional array (or 7D if the color
+            % channels aren't unrolled)
             error('not implemented yet!');
         end
         
         function obj = set_verbose(obj, verbose)
-            % toggle object's verbosity; at the moment this only enables or
-            % disables calls to the object's status callback
+            % toggle object's verbosity;
+            % at the moment this only enables or disables calls to the object's
+            % status callback
             obj.verbose = logical(verbose(1));
         end
         
         function obj = set_progress_callback(obj, progress_callback)
-            % set a progress callback function, that is called whenever there is
-            % an update in a lengthy process; the handle needs to be to a
-            % function that takes two parameters, the first one is a scalar
-            % between 0 and 1, indicating a percentage, the second one is an
-            % string containing a short description of the process; the function
-            % also needs to be able to be called without any arguments, which
-            % can be used to hide gui elements related to the progress display
+            % set a progress callback function, that is called lengthy processes;
+            % the handle needs to be to a function that takes two parameters,
+            % the first one is a scalar between 0 and 1, indicating a
+            % percentage, the second one is an string containing a short
+            % description of the process; the function also needs to be able to
+            % be called without any arguments, which can be used to hide gui
+            % elements related to the progress display
             obj.progress_fcn = progress_callback;
-        end
-        
-        function progress(obj, value, str)
-            % this function is called by members of btf objects to send out
-            % status updates
-            if obj.verbose
-                if exist('value', 'var')
-                    obj.progress_fcn(value, str);
-                else
-                    obj.progress_fcn();
-                end
-            end
-        end
-        
-        function default_progress_fcn(value, str)
-            % this is just a very simple function for displaying progress
-            % updates on the matlab prompt
-            if ~exist('str', 'var')
-                str = '';
-            end
-            
-            if exist('value', 'var')
-                fprintf('%03.2%% (%s)...\n', 100 * value, str);
-            end
         end
     end
     
@@ -567,6 +633,29 @@ classdef btf < handle
             V_idxs = V_idxs_with_bottom_ring(V_idxs_with_bottom_ring < obj.meta.nV);
             L_weights = L_bc(L_idxs_with_bottom_ring < obj.meta.nL);
             V_weights = V_bc(V_idxs_with_bottom_ring < obj.meta.nV);
+        end
+        
+        function progress(obj, value, str)
+            % this function is called by members of btf objects to send status updates
+            if obj.verbose
+                if exist('value', 'var')
+                    obj.progress_fcn(value, str);
+                else
+                    obj.progress_fcn();
+                end
+            end
+        end
+        
+        function default_progress_fcn(value, str)
+            % this is just a very simple function for displaying progress
+            % updates on the matlab prompt
+            if ~exist('str', 'var')
+                str = '';
+            end
+            
+            if exist('value', 'var')
+                fprintf('%03.2%% (%s)...\n', 100 * value, str);
+            end
         end
     end
 end
