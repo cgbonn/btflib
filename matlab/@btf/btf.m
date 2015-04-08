@@ -146,8 +146,8 @@ classdef btf < handle
             %	for each view slot
             p = inputParser;
             p.StructExpand = false;
-            p.addParameter('quality', 1, @(x) iscalar(x) && isnumeric(x));
-            p.addParameter('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
+            p.addParamValue('quality', 1, @(x) iscalar(x) && isnumeric(x));
+            p.addParamValue('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
             
             file_name = varargin{1};
             if ischar(file_name) && exist(file_name, 'file')

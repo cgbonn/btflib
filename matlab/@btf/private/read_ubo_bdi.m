@@ -55,8 +55,8 @@ function [data, meta] = read_ubo_bdi(fid, signature, header_flag)
         meta.compression = fread(fid, 1, 'uchar');
     end
     
-    if meta.compression ~= 2
-        error('only BDIs of type BDI_SPARSE_UNCOMPRESSED are supported at the moment');
+    if meta.compression ~= 0 && meta.compression ~= 2
+        error('only BDIs of type BDI_FULL_UNCOMPRESSED or BDI_SPARSE_UNCOMPRESSED are supported at the moment');
     end
 
     % this mask indicates which ABRDFs are missing
