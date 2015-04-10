@@ -116,7 +116,7 @@ function [data, meta] = read_ubo_bdi(fid, signature, header_flag)
         if compressed_chunk_size > max_compressed_chunk_size
             max_compressed_chunk_size = compressed_chunk_size;
         end
-        bytes_read_total = bytes_read_total + file_off + num_bytes('uint32');
+        bytes_read_total = bytes_read_total + file_off + utils.sizeof('uint32');
     end
 
     % allocate storage for compressed chunks

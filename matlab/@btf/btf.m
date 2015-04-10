@@ -288,6 +288,12 @@ classdef btf < handle
                 error('buffer_bdi only works with BDIs. non-BDIs are always fully loaded to memory.');
             end
             
+            % free memory to ensure the maximum number of available bytes
+            % is used
+            if obj.is_buffered()
+                obj.clear_buffer();
+            end
+            
             if ~exist('max_free_mem_percentage', 'var')
                 max_free_mem_percentage = 0.9;
             end
@@ -337,7 +343,7 @@ classdef btf < handle
             if obj.is_bdi()
                 obj.data.num_chunks_in_buffer = 0;
                 obj.data.chunks_buffered(:) = false;
-                obj.data.buffer = [];
+                obj.data.chunks = [];
             end
         end
         
@@ -493,8 +499,8 @@ classdef btf < handle
             % performed between the color values corresponding to the
             % closest sampled direction pairs.
             if isscalar(L) && isscalar(V)
-                L = uint32(L);
-                V = uint32(V);
+                L = round(L);
+                V = round(V);
                 % direct access via indices
                 switch obj.format_str
                     case 'BDI'
