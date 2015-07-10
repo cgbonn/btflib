@@ -1,3 +1,30 @@
+% *************************************************************************
+% * Copyright 2015 University of Bonn
+% *
+% * authors:
+% *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
+% *
+% * last modification date: 2015-07-10
+% *
+% * This file is part of btflib.
+% *
+% * btflib is free software: you can redistribute it and/or modify it under
+% * the terms of the GNU Lesser General Public License as published by the
+% * Free Software Foundation, either version 3 of the License, or (at your
+% * option) any later version.
+% *
+% * btflib is distributed in the hope that it will be useful, but WITHOUT
+% * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+% * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+% * License for more details.
+% *
+% * You should have received a copy of the GNU Lesser General Public
+% * License along with btflib.  If not, see <http://www.gnu.org/licenses/>.
+% *
+% *************************************************************************
+%
+% Crop a per view factorized (PVF) BTF file in Bonn University's binary format.
+% In this format, for each view direction a PCA factorization is stored.
 function obj = crop_pvf(obj, roi, strides)
     nC = obj.meta.num_channels;
     nL = obj.meta.nL;

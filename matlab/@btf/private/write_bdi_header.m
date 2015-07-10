@@ -30,7 +30,46 @@
 % several scan lines in texture space.
 % This function can in theory be used to write BDIs from non-BDI (i.e.
 % compressed) BTFs, as long as those provide a decode_abrdf method.
-function write_ubo_bdi(obj, fid)
-    obj.write_bdi_header(fid);
-    obj.write_bdi_chunks(fid);
+function write_bdi_header(obj, fid)
+    % some parameters
+    if isfield(obj.meta, 'num_scan_lines_per_chunk')
+        num_scan_lines_per_chunk = obj.meta.num_scan_lines_per_chunk;
+    else
+        num_scan_lines_per_chunk = 4;
+    end
+    if isfield(obj.meta, 'compression')
+        compression = obj.meta.compression;
+    else
+        compression = 2; % sparse uncompressed
+    end
+    if compression ~= 2
+        error('only sparse uncompressed BDIs are supported at the moment.');
+    end
+    
+    % write signature, meta data & bidir sampling
+    fwrite(fid, '!BDIF06R2!', 'char');
+    
+    write_meta_data(fid, obj.meta);
+    write_bidir_sampling(fid, obj.meta);
+    
+    % store spatial extents of textures (in pixels)
+    fwrite(fid, obj.meta.width, 'uint32');
+    fwrite(fid, obj.meta.height, 'uint32');
+    
+    fwrite(fid, num_scan_lines_per_chunk, 'uint32');
+    if compression ~= 1
+        fwrite(fid, compression, 'uint8');
+    end
+    
+    % write sparsity mask (indicates which ABRDFs are missing)
+    if ~isfield(obj.meta, 'mask')
+        obj.meta.mask = true(obj.meta.width, obj.meta.height);
+    end
+    fwrite(fid, obj.meta.mask, 'uint8');
+    
+    % write rotations if available
+    fwrite(fid, obj.meta.num_rotations, 'uint32');
+    if obj.meta.num_rotations
+        fwrite(fid, obj.meta.rotations', 'single');
+    end
 end

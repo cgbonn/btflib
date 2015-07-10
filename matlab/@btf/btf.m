@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-30
+% * last modification date: 2015-07-10
 % *
 % * This file is part of btflib.
 % *
@@ -242,7 +242,7 @@ classdef btf < handle
             fclose(fid);
         end
         
-        function obj = crop(obj, roi, strides)
+        function obj = crop(obj, roi, strides, output_file_name)
             % apply a region of interest to a BTF or BDI
             if ~exist('strides', 'var')
                 strides = [1; 1];
@@ -265,7 +265,7 @@ classdef btf < handle
             % apply roi to data matrices
             switch obj.format_str
                 case 'BDI'
-                    obj = obj.crop_bdi(roi, strides);
+                    obj = obj.crop_bdi(roi, strides, output_file_name);
                 case 'DFMF'
                     obj = obj.crop_dfmf(roi, strides);
                 case 'FMF'
