@@ -150,7 +150,10 @@ classdef btf < handle
             p.addParamValue('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
             
             file_name = varargin{1};
-            if ischar(file_name) && exist(file_name, 'file')
+            if ischar(file_name)
+                if ~exist(file_name, 'file')
+                    error('BTF file not found.');
+                end
                 varargin = varargin(2 : end);
                 p.parse(varargin{:});
                 obj.quality = p.Results.quality;
@@ -464,7 +467,7 @@ classdef btf < handle
                 texel = obj.undecorrelate(texel);
 
                 % invert dynamic range reduction if necessary
-                texel = obj.restore_dynamic_range(texel);
+                texel = obj.restore_dynamic_range(texel(:));
 
                 % remove cosine term, if it is in the data
                 if obj.meta.cosine_flag
@@ -472,7 +475,7 @@ classdef btf < handle
                 end
             elseif numel(L) == 2 && numel(V) == 2 || numel(L) == 3 && numel(V) == 3
                 % access via light and view directions -> interpolate samples
-                texel = zeros(obj.nC, 1, obj.data.class);
+                texel = zeros(obj.meta.num_channels, 1, obj.data.class);
                 
                 % get interpolation indices and weights
                 [ls, vs, weights_l, weights_v] = obj.lookup_dirs(L, V);
@@ -546,7 +549,7 @@ classdef btf < handle
             end
         end
         
-        function tensor = get_6d_tensor(obj)
+        function tensor = get_6d_tensor(obj) %#ok<STOUT,MANU>
             % TODO: implement extraction of the full data tensor
             % this should return a 6-dimensional array (or 7D if the color
             % channels aren't unrolled)
@@ -561,13 +564,13 @@ classdef btf < handle
         end
         
         function obj = set_progress_callback(obj, progress_callback)
-            % set a progress callback function, that is called lengthy processes;
+            % set a progress callback function, that is called during lengthy processes;
             % the handle needs to be to a function that takes two parameters,
             % the first one is a scalar between 0 and 1, indicating a
-            % percentage, the second one is an string containing a short
-            % description of the process; the function also needs to be able to
-            % be called without any arguments, which can be used to hide gui
-            % elements related to the progress display
+            % percentage, the second one is an optional string containing a
+            % short description of the process; the function also needs to be
+            % able to be called without any arguments, which can be used to hide
+            % or reset gui elements related to the progress display
             obj.progress_fcn = progress_callback;
         end
     end
@@ -644,15 +647,17 @@ classdef btf < handle
         function progress(obj, value, str)
             % this function is called by members of btf objects to send status updates
             if obj.verbose
-                if exist('value', 'var')
-                    obj.progress_fcn(value, str);
-                else
-                    obj.progress_fcn();
+                try %#ok<TRYNC>
+                    if exist('value', 'var')
+                        obj.progress_fcn(value, str);
+                    else
+                        obj.progress_fcn();
+                    end
                 end
             end
         end
         
-        function default_progress_fcn(value, str)
+        function default_progress_fcn(obj, value, str) %#ok<INUSL>
             % this is just a very simple function for displaying progress
             % updates on the matlab prompt
             if ~exist('str', 'var')
@@ -660,7 +665,7 @@ classdef btf < handle
             end
             
             if exist('value', 'var')
-                fprintf('%03.2%% (%s)...\n', 100 * value, str);
+                fprintf('%03.2f%% (%s)...\n', 100 * value, str);
             end
         end
     end
