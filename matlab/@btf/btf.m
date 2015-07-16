@@ -261,6 +261,8 @@ classdef btf < handle
             roi_dims = roi(:, 2) - roi(:, 1) + 1;
             strides(1) = max(1, min(roi_dims(1), strides(1)));
             strides(2) = max(1, min(roi_dims(2), strides(2)));
+            inds_x = roi(1, 1) : strides(1) : roi(1, 2);
+            inds_y = roi(2, 1) : strides(2) : roi(2, 2);
             
             % apply roi to data matrices
             switch obj.format_str
@@ -274,8 +276,8 @@ classdef btf < handle
                     obj = obj.crop_pvf(roi, strides);
             end
             
-            obj.meta.width = roi_dims(1);
-            obj.meta.height = roi_dims(2);
+            obj.meta.width = numel(inds_x);
+            obj.meta.height = numel(inds_y);
         end
         
         function bdi = is_bdi(obj)
@@ -549,11 +551,26 @@ classdef btf < handle
             end
         end
         
-        function tensor = get_6d_tensor(obj) %#ok<STOUT,MANU>
-            % TODO: implement extraction of the full data tensor
-            % this should return a 6-dimensional array (or 7D if the color
-            % channels aren't unrolled)
-            error('not implemented yet!');
+        function tensor = get_5d_tensor(obj)
+            % extract the full data tensor as a 5-dimensional array (num_lights
+            % x num_views x width x height x num_channels)
+            switch obj.format_str
+                case 'BDI'
+                    error('not implemented yet!');
+                case 'DFMF'
+                    tensor = cell(obj.meta.num_channels, 1);
+                    for c = 1 : obj.meta.num_channels
+                        tensor{c} = obj.data.U{c} * obj.data.SxV{c}';
+                    end
+                    tensor = cat(3, tensor{:});
+                    tensor = obj.undecorrelate(tensor);
+                    tensor = reshape(tensor, obj.meta.nL, obj.meta.nV, ...
+                        obj.meta.width, obj.meta.height, obj.meta.num_channels);
+                case 'FMF'
+                    error('not implemented yet!');
+                case 'PVF'
+                    error('not implemented yet!');
+            end
         end
         
         function obj = set_verbose(obj, verbose)
