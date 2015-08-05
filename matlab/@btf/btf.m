@@ -211,7 +211,12 @@ classdef btf < handle
             fclose(fid);
 
             % store full path
-            obj.meta.file_name = which(file_name);
+            if isempty(which(file_name))
+                % path already is absolute and not on the search path
+                obj.meta.file_name = file_name;
+            else
+                obj.meta.file_name = which(file_name);
+            end
             obj = obj.init_dirs();
         end
         
