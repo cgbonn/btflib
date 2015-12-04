@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-07-10
+% * last modification date: 2015-08-29
 % *
 % * This file is part of btflib.
 % *
@@ -553,6 +553,36 @@ classdef btf < handle
                 end
             else
                 error('error while decoding: either provide readily computed indices, 3D cartesian directions, or two polar angles respectively for light and view.');
+            end
+        end
+        
+        function textures = get_eigen_textures(obj)
+            % return the eigen textures of a matrix factorization-based
+            % compressed BTF
+            switch obj.format_str
+                case 'DFMF'
+                    textures = obj.get_dfmf_eigen_textures();
+                case 'FMF'
+                    textures = obj.get_fmf_eigen_textures();
+                case 'PVF'
+                    textures = obj.get_pvf_eigen_textures();
+                otherwise
+                    error('extraction of eigen textures is only possible with (D)FMF BTFs or PVF BTFs.');
+            end
+        end
+        
+        function abrdfs = get_eigen_abrdfs(obj)
+            % return the eigen ABRDFs of a matrix factorization-based
+            % compressed BTF
+            switch obj.format_str
+                case 'DFMF'
+                    abrdfs = obj.get_dfmf_eigen_abrdfs();
+                case 'FMF'
+                    abrdfs = obj.get_fmf_eigen_abrdfs();
+                case 'PVF'
+                    abrdfs = obj.get_pvf_eigen_abrdfs();
+                otherwise
+                    error('extraction of eigen ABRDFs is only possible with (D)FMF BTFs or PVF BTFs.');
             end
         end
         
