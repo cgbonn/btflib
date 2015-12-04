@@ -29,27 +29,43 @@
 %   - per default, the radial coordinate is not computed as this function
 %     is intended for normalized vectors; if it is required, an additional
 %     boolean input parameter needs to be set to true
-%   - input can either be a single N x 3 matrix which stores the cartesian
-%     x-, y- and z-coordinates in its rows, or separate N x 1 arrays of
-%     these three quantities
-%   - it either returns an N x 2 array (default) with the polar angle in
-%     its first and the azimuth angle in its second column; if requested,
-%     it returns an N x 3 array which furthermore stores the radial
-%     component in its third column
+%   - input can either be a single N x 3 or 3 x N matrix which stores the
+%     cartesian x-, y- and z-coordinates in its rows or columns, or separate N x
+%     1 or 1 x N arrays of these three quantities
+%   - by default it either returns an N x 2 or 2 x N array with the polar angle
+%     in its first and the azimuth angle in its second column / row; or if
+%     requested, it returns an N x 3 or 3 x N array which furthermore stores the
+%     radial component in its third column
+%
+% Usage:
+%   sph = cart2sph2(xyz)
+%   sph = sph2cart2(xyz, with_radius)
+%   sph = sph2cart2(x, y, z)
+%   sph = sph2cart2(x, y, z, with_radius)
+% 
+% where all input arrays are N x 3, 3 x N, N x 1 or 1 x N respectively, the
+% optional last argument is a boolean and the output array is N x 2 or 2 x N.
 function sph = cart2sph2(varargin)
     % input parsing
     if numel(varargin) < 3
         % one input matrix of dimensions n x 3
-        x = varargin{1}(:, 1);
-        y = varargin{1}(:, 2);
-        z = varargin{1}(:, 3);
+        if size(varargin{1}, 1) == 3
+            x = varargin{1}(1, :);
+            y = varargin{1}(2, :);
+            z = varargin{1}(3, :);
+        else
+            x = varargin{1}(:, 1);
+            y = varargin{1}(:, 2);
+            z = varargin{1}(:, 3);
+        end
     elseif numel(varargin) >= 3
         % three separate matrices
         x = varargin{1};
         y = varargin{2};
         z = varargin{3};
     end
-    n = size(x, 1);
+    n = size(x);
+    
     if numel(varargin) > 3
         with_radius = varargin{4};
     else
@@ -60,16 +76,31 @@ function sph = cart2sph2(varargin)
     
     % radius?
     if with_radius
-        sph = zeros(n, 3, class(x));
+        sph = zeros([3, prod(n)], class(x)); %#ok<ZEROLIKE>
         
-        sph(:, 3) = hypot(len_xy, z);
+        sph(3, :) = reshape(hypot(len_xy, z), 1, []);
     else
-        sph = zeros(n, 2, class(x));
+        sph = zeros([2, n], class(x)); %#ok<ZEROLIKE>
     end
     
     % inclination
-    sph(:, 1) = atan2(len_xy, z);
+    sph(1, :) = reshape(atan2(len_xy, z), 1, []);
     
     % azimuth
-    sph(:, 2) = atan2(y, x);
+    sph(2, :) = reshape(atan2(y, x), 1, []);
+    
+    % let's try to maintain the array orientation
+    if numel(n) == 2 && any(n == 1)
+        % special case: 2D array -> keep orientation
+        if (numel(varargin) < 3 && size(varargin{1}, 2) == 3 || ...
+                numel(varargin) >= 3 && size(varargin{1}, 2) == 1)
+            sph = sph';
+        else
+            sph = reshape(sph, [2, n(2)]);
+        end
+    else
+        % otherwise we default to putting the xyz-coordinates into the first
+        % dimension and keeping the the shape of the input
+        sph = reshape(sph, [size(sph, 1), n]);
+    end
 end

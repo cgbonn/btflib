@@ -23,55 +23,55 @@
 % *
 % *************************************************************************
 %
-% This function converts cartesian coordinates specified as an N x 3 or 3 x N
-% array into parabolic coordinates according to the equation x_{par} = x_{car} /
-% (1 + z_{car]) and returns the parabolic x- and y-coordinates in an N x 2 or 2
-% x N array.
+% This function converts parabolic coordinates specified as an N x 2 or 2 x N
+% array into 3D cartesian coordinates according to the relations l_{par} =
+% x_{par} ^ 2 + y_{par}; xy_{car} = 2 * xy_{par} / (l + 1); z_{car} = (1 - l) /
+% (l + 1) and returns the cartesian x-, y- and z-coordinates in an N x 3 or 3 x
+% N array.
 %
 % Usage:
-%   xy_par = cart2par(xyz)
-%   xy_par = cart2par(x, y, z)
+%   xyz_car = par2cart(xy_par)
+%   xyz_car = par2cart(x_par, y_par, z_par)
 % 
-% where all input arrays are N x 3, 3 x N, N x 1 or 1 x N respectively and the
-% output array is N x 2 or 2 x N.
-function par = cart2par(varargin)
+% where all input arrays are N x 2, 2 x N, N x 1 or 1 x N respectively and the
+% output array is N x 3 or 3 x N.
+function car = par2cart(varargin)
     % input parsing
-    if numel(varargin) < 3
+    if numel(varargin) < 2
         % one input matrix of dimensions n x 3
-        if size(varargin{1}, 1) == 3
+        if size(varargin{1}, 1) == 2
             x = varargin{1}(1, :);
             y = varargin{1}(2, :);
-            z = varargin{1}(3, :);
         else
             x = varargin{1}(:, 1);
             y = varargin{1}(:, 2);
-            z = varargin{1}(:, 3);
         end
-    elseif numel(varargin) >= 3
+    elseif numel(varargin) >= 2
         % three separate matrices
         x = varargin{1};
         y = varargin{2};
-        z = varargin{3};
     end
     n = size(x);
     
-    par = zeros([2, prod(n)], class(x)); %#ok<ZEROLIKE>
+    car = zeros([3, n], class(x)); %#ok<ZEROLIKE>
     
-    par(1, :) = reshape(x ./ (1 + z), 1, []);
-    par(2, :) = reshape(y ./ (1 + z), 1, []);
+    length_sqr = x .^ 2 + y .^ 2;
+    car(1, :) = reshape(2 * x ./ (length_sqr + 1), 1, []);
+    car(2, :) = reshape(2 * y ./ (length_sqr + 1), 1, []);
+    car(3, :) = reshape((1 - length_sqr) ./ (length_sqr + 1), 1, []);
     
     % let's try to maintain the array orientation
     if numel(n) == 2 && any(n == 1)
         % special case: 2D array -> keep orientation
-        if (numel(varargin) < 3 && size(varargin{1}, 2) == 3 || ...
-                numel(varargin) >= 3 && size(varargin{1}, 2) == 1)
-            par = par';
+        if (numel(varargin) == 1 && size(varargin{1}, 2) == 2 || ...
+                numel(varargin) >= 2 && size(varargin{1}, 2) == 1)
+            car = car';
         else
-            par = reshape(par, [2, n(2)]);
+            car = reshape(car, [3, n(2)]);
         end
     else
         % otherwise we default to putting the xyz-coordinates into the first
         % dimension and keeping the the shape of the input
-        par = reshape(par, [2, n]);
+        car = reshape(car, [3, n]);
     end
 end
