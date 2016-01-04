@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2015 University of Bonn
+% * Copyright 2016 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-12-21
+% * last modification date: 2016-01-04
 % *
 % * This file is part of btflib.
 % *
@@ -90,10 +90,10 @@ function sph = cart2sph2(varargin)
     sph(2, :) = reshape(atan2(y, x), 1, []);
     
     % let's try to maintain the array orientation
-    if numel(n) == 2 && any(n == 1) && ~all(n == 1)
+    if numel(n) == 2 && any(n == 1)
         % special case: 2D array -> keep orientation
         if numel(varargin) < 3 && size(varargin{1}, 2) == 3 || ...
-                numel(varargin) >= 3 && size(varargin{1}, 2) == 1
+                numel(varargin) >= 3 && size(varargin{1}, 2) == 1 && ~all(n == 1)
             sph = sph';
         else
             sph = reshape(sph, [size(sph, 1), n(2)]);

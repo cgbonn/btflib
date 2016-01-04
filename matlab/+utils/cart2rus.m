@@ -1,10 +1,10 @@
 % *************************************************************************
-% * Copyright 2015 University of Bonn
+% * Copyright 2016 University of Bonn
 % *
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-12-21
+% * last modification date: 2016-01-04
 % *
 % * This file is part of btflib.
 % *
@@ -34,7 +34,7 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
         % bring everything to cartesian coordinates
         light_dirs = utils.sph2cart2(light_dirs(1, :), light_dirs(2, :));
         view_dirs = utils.sph2cart2(view_dirs(1, :), view_dirs(2, :));
-    elseif ~size(light_dirs, 1) == 3 && ~size(view_dirs, 1) == 3
+    elseif size(light_dirs, 1) ~= 3 && size(view_dirs, 1) ~= 3
         error('input arrays must both be (2 x N) or (3 x N)');
     end
     n = size(light_dirs, 2);
@@ -50,17 +50,33 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
     sin_phi = sin(-half_sph(1, :));
     
     % compute difference vector
-    diff = light_dirs;
-    for jj = 1 : n,
-       rot_z = [cos_theta(jj), -sin_theta(jj), 0;
-           sin_theta(jj), cos_theta(jj), 0;
-           0, 0, 1];
-       rot_y = [cos_phi(jj), 0, sin_phi(jj);
-           0, 1, 0;
-           -sin_phi(jj), 0, cos_phi(jj)];
-       diff(:, jj) = rot_y * rot_z * light_dirs(:, jj);
-    end
+    % (the slow but readable way)
+%     diff = light_dirs;
+%     for jj = 1 : n,
+%        rot_z = [cos_theta(jj), -sin_theta(jj), 0;
+%            sin_theta(jj), cos_theta(jj), 0;
+%            0, 0, 1];
+%        rot_y = [cos_phi(jj), 0, sin_phi(jj);
+%            0, 1, 0;
+%            -sin_phi(jj), 0, cos_phi(jj)];
+%        diff(:, jj) = rot_y * rot_z * light_dirs(:, jj);
+%     end
+    
+    % this is the same computation of R_y * R_z * light as above but in a much
+    % more efficient expression
+    diff = zeros(3, n);
+    diff(1, :) =	cos_phi .* cos_theta .* light_dirs(1, :) ...
+                  - cos_phi .* sin_theta .* light_dirs(2, :) ...
+                  + sin_phi .* light_dirs(3, :);
+    diff(2, :) =	sin_theta .* light_dirs(1, :) ...
+                  + cos_theta .* light_dirs(2, :);
+    diff(3, :) =  - sin_phi .* cos_theta .* light_dirs(1, :) ...
+                  + sin_phi .* sin_theta .* light_dirs(2, :) ...
+                  + cos_phi .* light_dirs(3, :);
+    
     diff = diff ./ repmat(sqrt(sum(diff .^ 2, 1)), 3, 1);
     
-    diff_sph = utils.cart2sph2(diff(1, :), diff(2, :), diff(3, :));
+    if nargout > 3
+        diff_sph = utils.cart2sph2(diff(1, :), diff(2, :), diff(3, :));
+    end
 end
