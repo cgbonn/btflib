@@ -24,16 +24,18 @@
 % *************************************************************************
 %
 % This function creates a regular grid in spherical coordinates on the
-% hemisphere in positive z-direction. The radial component is fixed to 1. The
-% two (optional) arguments specify the number of grid points along the
-% inclination and azimuth angles, and respectively default to 90 and 360 points,
-% i.e. appr. 1 degree grid resolution at the equator. The function returns the
-% grid points in ndgrid format as both cartesian coordinates and optionally as
-% spherical coordinates. The returned arrays respectively contain the xyz and
-% the two spherical coordinates in the first dimension.
-%
+% hemisphere in positive z-direction. The radial component is fixed to 1.
+% The first two (optional) arguments specify the number of grid points
+% along the inclination and azimuth angles, and respectively default to 90
+% and 360 points, i.e. appr. 1 degree grid resolution at the equator. If
+% the third argument is set to true, the first and last azimuth angles will
+% coincide (0 and 2 pi), which will allow to continuously interpolate
+% across this boundary. The function returns the grid points in ndgrid
+% format as both cartesian coordinates and optionally as spherical
+% coordinates. The returned arrays respectively contain the xyz and the two
+% spherical coordinates in the first dimension.
 function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
-        inclination_res, azimuth_res)
+        inclination_res, azimuth_res, wrap_azimuth)
     
     if ~exist('inclination_res', 'var')
         inclination_res = 90;
@@ -43,9 +45,18 @@ function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
         azimuth_res = 360;
     end
     
+    if ~exist('wrap_azimuth', 'var')
+        wrap_azimuth = false;
+    end
+    
     thetas = linspace(0, pi / 2, inclination_res);
-    phis = linspace(0, 2 * pi, azimuth_res + 1);
-    phis = phis(1 : end - 1);
+    
+    if wrap_azimuth
+        phis = linspace(0, 2 * pi, azimuth_res);
+    else
+        phis = linspace(0, 2 * pi, azimuth_res + 1);
+        phis = phis(1 : end - 1);
+    end
     
     [thetas, phis] = ndgrid(thetas, phis);
     

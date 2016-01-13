@@ -39,21 +39,28 @@ function par = cart2par(varargin)
     if numel(varargin) < 3
         % one input matrix of dimensions n x 3
         if size(varargin{1}, 1) == 3
-            x = varargin{1}(1, :);
-            y = varargin{1}(2, :);
-            z = varargin{1}(3, :);
+            x = utils.sel_dim(varargin{1}, 1, 1);
+            y = utils.sel_dim(varargin{1}, 1, 2);
+            z = utils.sel_dim(varargin{1}, 1, 3);
+            n = size(x);
+            n(1) = [];
         else
-            x = varargin{1}(:, 1);
-            y = varargin{1}(:, 2);
-            z = varargin{1}(:, 3);
+            x = utils.sel_dim(varargin{1}, 2, 1);
+            y = utils.sel_dim(varargin{1}, 2, 2);
+            z = utils.sel_dim(varargin{1}, 2, 3);
+            n = size(x);
+            n(2) = [];
         end
     elseif numel(varargin) >= 3
         % three separate matrices
         x = varargin{1};
         y = varargin{2};
         z = varargin{3};
+        n = size(x);
+        if numel(n) > 1 && n(1) == 1
+            n = n(2 : end);
+        end
     end
-    n = size(x);
     
     par = zeros([2, prod(n)], class(x)); %#ok<ZEROLIKE>
     
@@ -61,13 +68,15 @@ function par = cart2par(varargin)
     par(2, :) = reshape(y ./ (1 + z), 1, []);
     
     % let's try to maintain the array orientation
-    if numel(n) == 2 && any(n == 1)
+    if numel(n) == 2 && any(n == 1) || numel(n) == 1
         % special case: 2D array -> keep orientation
-        if (numel(varargin) < 3 && size(varargin{1}, 2) == 3 || ...
-                numel(varargin) >= 3 && size(varargin{1}, 2) == 1)
+        if (numel(varargin) < 3 && size(varargin{1}, 2) == 3 && size(varargin{1}, 1) ~= 3) || ...
+                numel(varargin) >= 3 && size(varargin{1}, 2) == 1 && ~all(n == 1)
             par = par';
         else
-            par = reshape(par, [2, n(2)]);
+            if numel(n) ~= 1
+                par = reshape(par, [2, n(2)]);
+            end
         end
     else
         % otherwise we default to putting the xyz-coordinates into the first
