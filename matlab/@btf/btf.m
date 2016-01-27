@@ -643,15 +643,15 @@ classdef btf < handle
             % then have a margin around our triangulation in which we
             % couldn't determine any enclosing triangles for queried
             % directions)
-            L = utils.add_bottom_ring(L);
-            V = utils.add_bottom_ring(V);
+            L = utils.add_bottom_ring(L');
+            V = utils.add_bottom_ring(V');
             
             % set up Delaunay trianglulation of parabolic map of both light
             % and view directions
             L_par = utils.cart2par(L);
             V_par = utils.cart2par(V);
-            obj.TriL = delaunayTriangulation(L_par);
-            obj.TriV = delaunayTriangulation(V_par);
+            obj.TriL = delaunayTriangulation(L_par');
+            obj.TriV = delaunayTriangulation(V_par');
         end
         
         function [L_idxs, V_idxs, L_weights, V_weights] = lookup_dirs(obj, L, V)

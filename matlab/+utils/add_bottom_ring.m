@@ -23,7 +23,7 @@
 % *
 % *************************************************************************
 %
-% Given an N x 3 matrix of unit directions into the hemisphere with
+% Given an 3 x N matrix of unit directions into the hemisphere with
 % positive z-coordinate, this method adds new unit vectors that are evenly
 % distributed on the unit circle in the z = 0 plane. The number of these
 % added vectors depends on the distribution of the existing vectors. It is
@@ -32,21 +32,21 @@
 % such plane and adds the same number, or at least ten in the z = 0 plane.
 function dirs = add_bottom_ring(dirs)
     % we're only interested in the inclination angle
-    dirs_z = dirs(:, 3);
+    dirs_z = dirs(3, :);
 
     % do we actually need to add a bottom ring?
     if min(dirs_z) > 0
         % find lowest z-plane
         dirs_incl_thresh = min(dirs_z) + 1e-4 * min(dirs_z);
-        dirs_lowest_plane = dirs(dirs_z < dirs_incl_thresh, :);
+        dirs_lowest_plane = dirs(:, dirs_z < dirs_incl_thresh);
         num_lowest_dirs = max(10, size(dirs_lowest_plane, 1));
         
         % generate new vectors in spherical coordinates
-        polar = repmat(pi / 2, num_lowest_dirs, 1);
-        azimuth = linspace(0, (2 - 2 / num_lowest_dirs) * pi, num_lowest_dirs)';
-        dirs_bottom_ring_sph = [polar, azimuth];
+        polar = repmat(pi / 2, 1, num_lowest_dirs);
+        azimuth = linspace(0, (2 - 2 / num_lowest_dirs) * pi, num_lowest_dirs);
+        dirs_bottom_ring_sph = [polar; azimuth];
         
         % convert to cartesian coordinates
-        dirs = [dirs; utils.sph2cart2(dirs_bottom_ring_sph)];
+        dirs = [dirs, utils.sph2cart2(dirs_bottom_ring_sph)];
     end
 end

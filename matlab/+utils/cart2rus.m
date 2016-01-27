@@ -37,7 +37,10 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
     elseif size(light_dirs, 1) ~= 3 && size(view_dirs, 1) ~= 3
         error('input arrays must both be (2 x N) or (3 x N)');
     end
-    n = size(light_dirs, 2);
+    n = size(light_dirs);
+    n(1) = [];
+    light_dirs = reshape(light_dirs, [3, prod(n)]);
+    view_dirs = reshape(view_dirs, [3, prod(n)]);
     
     % compute halfway vector & bring to spherical coordinates
     half = light_dirs + view_dirs;
@@ -64,7 +67,7 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
     
     % this is the same computation of R_y * R_z * light as above but in a much
     % more efficient expression
-    diff = zeros(3, n);
+    diff = zeros(3, prod(n));
     diff(1, :) =	cos_phi .* cos_theta .* light_dirs(1, :) ...
                   - cos_phi .* sin_theta .* light_dirs(2, :) ...
                   + sin_phi .* light_dirs(3, :);
@@ -78,5 +81,10 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
     
     if nargout > 3
         diff_sph = utils.cart2sph2(diff(1, :), diff(2, :), diff(3, :));
+        diff_sph = reshape(diff_sph, [2, n]);
+        half_sph = reshape(half_sph, [2, n]);
     end
+    
+    half = reshape(half, [3, n]);
+    diff = reshape(diff, [3, n]);
 end

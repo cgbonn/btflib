@@ -24,14 +24,14 @@
 % *************************************************************************
 %
 % 
-function [L, V] = create_ubo_dome1_sampling()
+function [L, V, L_full, V_full] = create_ubo_dome1_sampling()
     inclination_angles_degree = [0, 11, 23.5, 30, 37.5, 45, 52.5, 60, 67.5, 75];
     azimuth_ring_count = [1, 6, 12, 12, 12, 18, 18, 24, 24, 24];
     azimuth_ring_offsets_degree = [0, 15, 0, 15, 0, 0, 7.5, 0, 7.5, 0];
     
     n_dirs = sum(azimuth_ring_count);
-    inclinations = zeros(n_dirs, 1);
-    azimuths = zeros(n_dirs, 1);
+    inclinations = zeros(1, n_dirs);
+    azimuths = zeros(1, n_dirs);
     % top dir
     inclinations(1) = inclination_angles_degree(1);
     azimuths(1) = azimuth_ring_offsets_degree(1);
@@ -48,6 +48,13 @@ function [L, V] = create_ubo_dome1_sampling()
         azimuths(ri) = azims;
     end
     
-    L = utils.sph2cart2([deg2rad(inclinations), deg2rad(azimuths)]);
+    L = utils.sph2cart2([deg2rad(inclinations); deg2rad(azimuths)]);
     V = L;
+    
+    if nargout > 2
+        num_lights = size(L, 2);
+        num_views = size(V, 2);
+        L_full = reshape(repmat(L, 1, num_views), 3, num_lights, num_views);
+        V_full = reshape(repmat(V, num_lights, 1), 3, num_lights, num_views);
+    end
 end

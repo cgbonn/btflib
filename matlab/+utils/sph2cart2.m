@@ -103,7 +103,7 @@ function xyz = sph2cart2(varargin)
         % special case: 2D array -> keep orientation
         if (numel(varargin) == 1 && size(varargin{1}, 2) == 2 || ...
                 size(varargin{1}, 2) == 3 || ...
-                numel(varargin) >= 2 && size(varargin{1}, 2) == 1)
+                numel(varargin) >= 2 && size(varargin{1}, 2) == 1) && ~all(n == 1)
             xyz = xyz';
         else
             xyz = reshape(xyz, [3, n(2)]);

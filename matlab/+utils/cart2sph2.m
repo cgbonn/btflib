@@ -76,7 +76,11 @@ function sph = cart2sph2(varargin)
     if numel(varargin) > 3
         with_radius = varargin{4};
     else
-        with_radius = false;
+        if numel(varargin) == 2
+            with_radius = varargin{2};
+        else
+            with_radius = false;
+        end
     end
     
     len_xy = hypot(x, y);
