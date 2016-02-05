@@ -35,7 +35,7 @@
 % coordinates. The returned arrays respectively contain the xyz and the two
 % spherical coordinates in the first dimension.
 function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
-        inclination_res, azimuth_res, wrap_azimuth)
+        inclination_res, azimuth_res, wrap_azimuth, avoid_grazing)
     
     if ~exist('inclination_res', 'var')
         inclination_res = 90;
@@ -49,7 +49,16 @@ function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
         wrap_azimuth = false;
     end
     
-    thetas = linspace(0, pi / 2, inclination_res);
+    if ~exist('avoid_grazing', 'var')
+        avoid_grazing = false;
+    end
+    
+    if avoid_grazing
+        thetas = linspace(0, pi / 2, inclination_res + 1);
+        thetas = thetas(1 : end - 1);
+    else
+        thetas = linspace(0, pi / 2, inclination_res);
+    end
     
     if wrap_azimuth
         phis = linspace(0, 2 * pi, azimuth_res);
