@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2016-01-04
+% * last modification date: 2016-02-05
 % *
 % * This file is part of btflib.
 % *
