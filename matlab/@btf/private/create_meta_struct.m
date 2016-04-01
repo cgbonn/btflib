@@ -35,8 +35,10 @@ function obj = create_meta_struct(obj, varargin)
     p.addParameter('num_channels', 3, @(x) isscalar(x) && isnumeric(x) && x > 0);
     p.addParameter('light_dirs', [], @(x) isnumeric(x) && size(x, 2) == 3);
     p.addParameter('view_dirs', [], @(x) isnumeric(x) && size(x, 2) == 3);
-    p.addParameter('cosine_flag', false, @(x) isscalar(x) && islogical(x));
-    p.addParameter('dynamic_range_reduction_method', 0, @(x) iscalar(x) && isnumeric(x));
+    p.addParameter('cosine_flag', false, @(x) isscalar(x) && (isnumeric(x) || islogical(x)));
+    if isfield(varargin{1}, 'dynamic_range_reduction_method')
+        p.addParameter('dynamic_range_reduction_method', 0, @(x) isscalar(x) && isnumeric(x));
+    end
     p.parse(varargin{:});
     
     % those are normally stored in the UBO BTF file formats
@@ -74,8 +76,8 @@ function obj = create_meta_struct(obj, varargin)
     
     % handle all remaining meta data fields
     if ~isempty(fieldnames(p.Unmatched))
-        for f = fieldnames(p.Unmatched)
-            obj.meta.(f) = p.Unmatched.(f);
+        for f = fieldnames(p.Unmatched)'
+            obj.meta.(f{1}) = p.Unmatched.(f{1});
         end
     end
 end

@@ -150,7 +150,7 @@ classdef btf < handle
             p.addParamValue('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
             
             file_name = varargin{1};
-            if ischar(file_name)
+            if ischar(file_name) && exist(file_name, 'file')
                 if ~exist(file_name, 'file')
                     error('BTF file not found.');
                 end

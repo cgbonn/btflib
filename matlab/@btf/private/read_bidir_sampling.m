@@ -34,8 +34,8 @@ function meta = read_bidir_sampling(fid, meta)
         num_lights = fread(fid, 1, 'uint32');
         if (isempty(L))
             L = utils.fread_matrix(fid, 'single', num_lights, 2);
-            meta.num_lights = num_lights;
-        elseif (num_lights ~= meta.num_lights)
+            meta.nL = num_lights;
+        elseif (num_lights ~= meta.nL)
             error('currently only fixed light hemisphere allowed!!');
         else
             fread(fid,  2 * num_lights, 'single'); %skip light directions

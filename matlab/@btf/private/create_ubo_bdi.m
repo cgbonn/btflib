@@ -52,6 +52,29 @@ function obj = create_ubo_bdi(obj, meta, data)
     obj.meta.chunk_offset = zeros(obj.meta.num_chunks, 1, 'int64');
     obj.meta.mask = true(obj.meta.width, obj.meta.height);
     
+    % if a 5D BDI tensor is provided, reshape it to chunk format
+    if isnumeric(data) && ndims(data) == 5
+        if size(data, 1) ~= nC
+            d = find(size(data) == nC, 1);
+            data = permute(data, [d, setdiff(1 : 5, d)]);
+        end
+        data = reshape(data, nC * nL * nV, w * h);
+    end
+    
+    % ensure data type is correct
+    if isnumeric(data)
+        switch class(data)
+            case {'single', 'double'}
+                data = halfprecision(data);
+            case {'int16', 'uint16'}
+                % half precision floats are stored as uint16 in matlab
+            otherwise
+                error(['cannot convert data to half precision float, ', ...
+                    'data must be single or double precision floats, ', ...
+                    'or already converted to half (i.e. int16 or uint16).']);
+        end
+    end
+    
     p = inputParser;
     p.KeepUnmatched = true;
     p.addRequired('chunks', @(x) isnumeric(x) && ...
