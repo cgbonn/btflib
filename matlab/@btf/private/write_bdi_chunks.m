@@ -31,6 +31,7 @@
 % This function can in theory be used to write BDIs from non-BDI (i.e.
 % compressed) BTFs, as long as those provide a decode_abrdf method.
 function write_bdi_chunks(obj, fid)
+    num_scan_lines_per_chunk = 4;
     abrdfs_per_chunk = obj.meta.width * num_scan_lines_per_chunk;
     abrdf_size = obj.meta.nL * obj.meta.nV * obj.meta.num_channels;
     
