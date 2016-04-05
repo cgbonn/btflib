@@ -39,7 +39,7 @@ function dirs = add_bottom_ring(dirs)
         % find lowest z-plane
         dirs_incl_thresh = min(dirs_z) + 1e-4 * min(dirs_z);
         dirs_lowest_plane = dirs(:, dirs_z < dirs_incl_thresh);
-        num_lowest_dirs = max(10, size(dirs_lowest_plane, 1));
+        num_lowest_dirs = max(10, size(dirs_lowest_plane, 2));
         
         % generate new vectors in spherical coordinates
         polar = repmat(pi / 2, 1, num_lowest_dirs);
