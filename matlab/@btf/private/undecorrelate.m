@@ -51,6 +51,7 @@ function values = undecorrelate(obj, values, varargin)
     mat_YCoCg2RGB = [1, 1, -1; 1, 0, 1; 1, -1, -1];
 
     % rearrange data to allow application of undecorrelation matrices
+    s_orig = size(values);
     values = reshape(values, [], obj.meta.num_channels);
     switch method
         case 0 % SIMPLE aka RGB
@@ -99,4 +100,5 @@ function values = undecorrelate(obj, values, varargin)
         otherwise
             error( 'unsupported color model' );
     end
+    values = reshape(values, s_orig);
 end
