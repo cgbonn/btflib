@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -34,20 +34,23 @@ function texel = decode_fmf_texel(obj, x, y, l, v)
     w = obj.meta.width;
     U = obj.data.U;
     SxV = obj.data.SxV;
+    nxy = numel(x);
+    nlv = numel(l);
+    assert(nxy == numel(y) && nlv == numel(v));
     
     % determine transposition of BTF-matrix
     if size(U, 1) == nC * nL * nV
         % abrdfs stacked column-wise
         xyInd = sub2ind([h, w], y, x);
-        clvInds = sub2ind([nC, nL, nV], 1 : nC, ...
-            repmat(l, 1, nC), repmat(v, 1, nC));
-        texel = squeeze(U(clvInds, :) * SxV(xyInd, :)');
+        clvInds = sub2ind([nC, nL, nV], repmat((1 : nC)', 1, nlv), ...
+            repmat(l(:)', nC, 1), repmat(v(:)', nC, 1));
+        texel = permute(reshape(U(clvInds, :) * SxV(xyInd, :)', nC, nlv, nxy), [2, 3, 1]);
     elseif size(U,1) == nC * h * w
         % images stacked column-wise
-        cxyInds = sub2ind([nC, h, w], 1 : nC, ...
-            repmat(y, 1, nC), repmat(x, 1, nC));
+        cxyInds = sub2ind([nC, h, w], repmat((1 : nC)', 1, nxy), ...
+            repmat(y(:)', nC, 1), repmat(x(:)', nC, 1));
         lvInds = sub2ind([nL, nV], l, v);
-        texel = squeeze(U(cxyInds, :) * SxV(lvInds, :)');
+        texel = permute(reshape(SxV(lvInds, :) * U(cxyInds, :)', nlv, nC, nxy), [1, 3, 2]);
     else
         error('unknown format of BTF U-component');
     end

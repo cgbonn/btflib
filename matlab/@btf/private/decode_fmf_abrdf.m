@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -34,17 +34,19 @@ function abrdf = decode_fmf_abrdf(obj, x, y)
     w = obj.meta.width;
     U = obj.data.U;
     SxV = obj.data.SxV;
+    n = numel(x);
+    assert(numel(y) == n);
     
     % determine transposition of BTF-matrix
     if size(U,1) == nC * nL * nV
         % abrdfs stacked column-wise
         xyInd = sub2ind([w, h], x, y);
-        abrdf = permute(reshape(U * SxV(xyInd, :)', [nC, nL, nV]), [2, 3, 1]);
+        abrdf = permute(reshape(U * SxV(xyInd, :)', [nC, nL, nV, n]), [2, 3, 4, 1]);
     elseif size(U,1) == nC * h * w
         % images stacked column-wise
         cxyInds = sub2ind([nC, w, h], 1 : nC, ...
             repmat(x, 1, nC), repmat(y, 1, nC));
-        abrdf = reshape(SxV * U(cxyInds, :)', [nL, nV, nC]);
+        abrdf = permute(reshape(SxV * U(cxyInds, :)', [nL, nV, nC, n]), [1, 2, 4, 1]);
     else
         error('unknown format of BTF U-component');
     end

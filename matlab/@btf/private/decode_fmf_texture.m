@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -34,16 +34,21 @@ function img = decode_fmf_texture(obj, l, v)
     w = obj.meta.width;
     U = obj.data.U;
     SxV = obj.data.SxV;
+    n = numel(l);
+    assert(numel(v) == n);
+    l = l(:)';
+    v = v(:)';
     
     % determine transposition of BTF-matrix
     if size(U, 1) == nC * nL * nV
         % abrdfs stacked column-wise
-        clvInds = sub2ind([nC, nL, nV], 1 : nC, repmat(l, 1, nC), repmat(v, 1, nC));
-        img = permute(reshape(SxV * U(clvInds, :)',[w, h, nC]), [2, 1, 3]);
+        clvInds = sub2ind([nC, nL, nV], repmat((1 : nC)', 1, n), ...
+            repmat(l, nC, 1), repmat(v, nC, 1));
+        img = permute(reshape(SxV * U(clvInds, :)',[w, h, nC, n]), [2, 1, 4, 3]);
     elseif size(U, 1) == nC * h * w
         % images stacked column-wise
         lvInd = sub2ind([nL, nV], l, v);
-        img = permute(reshape(U * SxV(lvInd, :)', [nC, w, h]), [3, 2, 1]);
+        img = permute(reshape(U * SxV(lvInd, :)', [nC, w, h, n]), [3, 2, 4, 1]);
     else
         error('unknown format of BTF U-component');
     end

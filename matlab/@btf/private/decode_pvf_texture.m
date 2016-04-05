@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-30
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -34,15 +34,29 @@ function img = decode_pvf_texture(obj, l, v)
     Ms = obj.data.Ms;
     Cs = obj.data.Cs;
     Ws = obj.data.Ws;
+    n = numel(l);
+    assert(numel(v) == n);
+    l = l(:)';
+    v = v(:)';
     
     % determine transposition of BTF-matrix
     if size(Cs{1}, 1) == nC * nL
         % light fields stacked column-wise
-        clInds = sub2ind([nC, nL], 1 : nC, repmat(l, 1, nC));
-        img = permute(reshape(Ws{v} * Cs{v}(clInds, :)' + repmat(Ms{v}(clInds)', h * w, 1), [w, h, nC]), [2, 1, 3]);
+        img = zeros(w, h, nC, n, obj.data.class);
+        for ii = 1 : n
+            clInds = sub2ind([nC, nL], 1 : nC, repmat(l(ii), 1, nC));
+            img(:, :, :, ii) = reshape(Ws{v(ii)} * Cs{v(ii)}(clInds, :)' + ...
+                repmat(Ms{v(ii)}(clInds)', h * w, 1), [w, h, nC]);
+        end
+        img = permute(img, [2, 1, 4, 3]);
     elseif size(Cs{1}, 1) == nC * h * w
         % images stacked column-wise
-        img = permute(reshape(Cs{v} * Ws{v}(l, :)' + Ms{v}, [nC, w, h]), [3,2,1]);
+        img = zeros(nC, w, h, n, obj.data.class);
+        for ii = 1 : n
+            img(:, :, :, ii) = reshape(Cs{v(ii)} * Ws{v(ii)}(l(ii), :)' + ...
+                Ms{v(ii)}, [nC, w, h]);
+        end
+        img = permute(img, [3, 2, 4, 1]);
     else
         error('unknown format of BTF U-component');
     end

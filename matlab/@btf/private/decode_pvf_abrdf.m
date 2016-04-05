@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -35,25 +35,30 @@ function abrdf = decode_pvf_abrdf(obj, x, y)
     Ms = obj.data.Ms; % means
     Cs = obj.data.Cs; % coefficients
     Ws = obj.data.Ws; % weights
+    n = numel(x);
+    assert(numel(y) == n);
+    x = x(:)';
+    y = y(:)';
     
-    abrdf = zeros(nC * nL, nV, obj.data.class);
     % determine transposition of BTF-matrix
     if size(Cs{1}, 1) == nC * nL
+        abrdf = zeros(nC * nL, nV, n, obj.data.class);
         % light fields stacked column-wise
         xyInd = sub2ind([w, h], x, y);
         for v = 1 : nV
-            abrdf(:, v) = Cs{v} * Ws{v}(xyInd, :)' + Ms{v};
+            abrdf(:, v, :) = Cs{v} * Ws{v}(xyInd, :)' + repmat(Ms{v}, 1, n);
         end
-        abrdf = permute(reshape(abrdf, [nC, nL, nV]), [2, 3, 1]);
+        abrdf = permute(reshape(abrdf, [nC, nL, nV, n]), [2, 3, 4, 1]);
     elseif size(Cs{1}, 1) == nC * h * w
+        abrdf = zeros(nC, n, nL, nV, obj.data.class);
         % images stacked column-wise
-        cxyInds = sub2ind([nC, w, h], 1 : nC, ...
-            repmat(x, 1, nC), repmat(y, 1, nC));
+        cxyInds = sub2ind([nC, w, h], repmat((1 : nC)', 1, n), ...
+            repmat(x, nC, 1), repmat(y, nC, 1));
         for v = 1 : nV
-            abrdf(:, v) = reshape(Cs{v}(cxyInds, :) * Ws{v}' + ...
-                repmat(Ms{v}(cxyInds), [1, nL]), [nC * nL, 1]);
+            abrdf(:, :, :, v) = reshape(Cs{v}(cxyInds, :) * Ws{v}' + ...
+                repmat(Ms{v}(cxyInds, :), [1, nL]), [nC, n, nL]);
         end
-        abrdf = permute(reshape(abrdf, [nC, nL, nV]), [2, 3, 1]);
+        abrdf = permute(abrdf, [3, 4, 2, 1]);
     else
         error('unknown format of BTF U-component');
     end

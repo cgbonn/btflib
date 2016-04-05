@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-08-29
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -410,12 +410,31 @@ classdef btf < handle
             vaz = v_sph(2);
         end
         
-        function abrdf = decode_abrdf(obj, x, y)
+        function abrdf = decode_abrdf(obj, x, y, form_cart_prod)
             % decode a full ABRDF for a given pair of x- and y-coordinates
             %
             % no interpolation yet, so x and y should be integers
+            % if form_cart_prod is set to true, the cartesian product of
+            % all the coordinates in x and y is formed.
+            
+            if ~exist('form_cart_prod', 'var')
+                form_cart_prod = false;
+            end
+            
             x = uint32(x);
             y = uint32(y);
+            
+            if ndims(x) ~= ndims(y)
+                error('x and y arrays should have the same number of dimensions');
+            end
+            dim_x = size(x);
+            dim_y = size(y);
+            
+            if ~all(dim_x == dim_y) || form_cart_prod
+                % apparently we're supposed to form the cartesian product
+                [x, y] = ndgrid(x(:), y(:));
+            end
+            
             switch obj.format_str
                 case 'BDI'
                     abrdf = obj.decode_bdi_abrdf(x, y);
@@ -437,23 +456,68 @@ classdef btf < handle
             
             % remove cosine term, if it is in the data
             if obj.meta.cosine_flag
-                abrdf = abrdf ./ repmat(obj.meta.L(:, 3), 1, obj.meta.nV, obj.meta.num_channels);
+                abrdf = bsxfun(@rdivide, abrdf, obj.meta.L(:, 3));
             end
             
             % rearrange as image
-            abrdf = reshape(abrdf, [obj.meta.nL, obj.meta.nV, obj.meta.num_channels]);
+            abrdf = reshape(permute(abrdf, [1, 2, 4, 3]), obj.meta.nL, obj.meta.nV, obj.meta.num_channels, []);
         end
         
-        function texel = decode_texel(obj, x, y, L, V)
+        function texel = decode_texel(obj, x, y, L, V, form_cart_prod)
             % decode a single texel at given pixel coordinates for given light & view directions
             % 
             % x, y need to be integer indices into the texture space, L and
-            % V can either be integers indices in the angular domain or two
-            % vectors (either 3D cartesian or 2D inclination-azimuth pairs).
+            % V can either be integers indices in the angular domain, two
+            % vectors (either 3D cartesian or 2D inclination-azimuth pairs) or
+            % two 3 x N or 2 x N matrices of such vectors.
             % In the latter case, angular interpolation is performed
             % between the color values corresponding to the closest sampled
             % direction pairs.
-            if isscalar(L) && isscalar(V)
+            % If form_cart_prod is set to true, the cartesian product of
+            % all the coordinates in x and y is formed, as well as the cartesian
+            % product of all indices in L and V.
+            
+            if ~exist('form_cart_prod', 'var')
+                form_cart_prod = false;
+            end
+            
+            if ndims(x) ~= ndims(y)
+                error('x and y arrays should have the same number of dimensions');
+            end
+            dim_x = size(x);
+            dim_y = size(y);
+            
+            if ndims(L) ~= ndims(V)
+                error('x and y arrays should have the same number of dimensions');
+            end
+            if size(L, 1) ~= 3
+                L = L(:, :)';
+            end
+            if size(V, 1) ~= 3
+                V = V(:, :)';
+            end
+            dim_L = size(L);
+            dim_V = size(V);
+            
+            if ~all(dim_x == dim_y) || form_cart_prod
+                % apparently we're supposed to form the cartesian product
+                [x, y] = ndgrid(x(:), y(:));
+            end
+            
+            if ~all(dim_L == dim_V) || form_cart_prod
+                % apparently we're supposed to form the cartesian product
+                L_in = L;
+                V_in = V;
+                L = zeros(3, dim_L(2), dim_V(2));
+                V = zeros(3, dim_L(2), dim_V(2));
+                for ci = 1 : 3
+                    [L(ci, :, :), V(ci, :, :)] = ndgrid(reshape(L_in(ci, :), [], 1), ...
+                        reshape(V_in(ci, :), [], 1));
+                end
+            end
+            
+            if all(x(:) == round(x(:))) && all(y(:) == round(y(:))) && ...
+                    all(L(:) == round(L(:))) && all(V(:) == round(V(:)))
                 L = uint32(L);
                 V = uint32(V);
                 % direct access via indices
@@ -474,25 +538,32 @@ classdef btf < handle
                 texel = obj.undecorrelate(texel);
 
                 % invert dynamic range reduction if necessary
-                texel = obj.restore_dynamic_range(texel(:));
+                texel = obj.restore_dynamic_range(texel);
 
                 % remove cosine term, if it is in the data
                 if obj.meta.cosine_flag
-                    texel = texel ./ obj.meta.L(L, 3);
+                    texel = bsxfun(@rdivide, texel, obj.meta.L(L, 3));
                 end
-            elseif numel(L) == 2 && numel(V) == 2 || numel(L) == 3 && numel(V) == 3
+            elseif any(size(L) == 2) && any(size(V) == 2) || ...
+                    any(size(L) == 3) && any(size(V) == 3)
                 % access via light and view directions -> interpolate samples
-                texel = zeros(obj.meta.num_channels, 1, obj.data.class);
+                
+                nlv = size(L(:, :), 2);
+                assert(nlv == size(V(:, :), 2));
+                nxy = numel(x);
+                assert(nxy == numel(y));
+                
+                texel = zeros(nlv, nxy, obj.meta.num_channels, obj.data.class);
                 
                 % get interpolation indices and weights
                 [ls, vs, weights_l, weights_v] = obj.lookup_dirs(L, V);
-                for li = 1 : numel(ls)
-                    l = ls(li);
-                    for vi = 1 : numel(vs)
-                        v = vs(vi);
+                for li = 1 : 3
+                    l = ls(:, li);
+                    for vi = 1 : 3
+                        v = vs(:, vi);
                         
-                        texel = texel + weights_l(li) * weights_v(vi) * ...
-                            obj.decode_texel(x, y, l, v);
+                        texel = texel + bsxfun(@times, weights_l(:, li) .* weights_v(:, vi), ...
+                            obj.decode_texel(x, y, l, v));
                     end
                 end
             else
@@ -500,15 +571,47 @@ classdef btf < handle
             end
         end
         
-        function img = decode_texture(obj, L, V)
+        function img = decode_texture(obj, L, V, form_cart_prod)
             % decode full texture for given light & view directions
             %
-            % L and V can either be integers indices in the angular domain
-            % or two vectors (either 3D cartesian or 2D inclination-azimuth
-            % pairs). In the latter case, angular interpolation is
-            % performed between the color values corresponding to the
-            % closest sampled direction pairs.
-            if isscalar(L) && isscalar(V)
+            % L and V can either be integer indices in the angular domain,
+            % two vectors (either 3D cartesian or 2D inclination-azimuth pairs)
+            % or two 3 x N or 2 x N matrices of such vectors. 
+            % In the latter two cases, angular interpolation is performed
+            % between the color values corresponding to the closest sampled
+            % direction pairs.
+            % If form_cart_prod is set to true, the cartesian product of
+            % all the coordinates in L and V is formed.
+            
+            if ~exist('form_cart_prod', 'var')
+                form_cart_prod = false;
+            end
+            
+            if ndims(L) ~= ndims(V)
+                error('x and y arrays should have the same number of dimensions');
+            end
+            if size(L, 1) ~= 3
+                L = L(:, :)';
+            end
+            if size(V, 1) ~= 3
+                V = V(:, :)';
+            end
+            dim_L = size(L);
+            dim_V = size(V);
+            
+            if ~all(dim_L == dim_V) || form_cart_prod
+                % apparently we're supposed to form the cartesian product
+                L_in = L;
+                V_in = V;
+                L = zeros(3, dim_L(2), dim_V(2));
+                V = zeros(3, dim_L(2), dim_V(2));
+                for ci = 1 : 3
+                    [L(ci, :, :), V(ci, :, :)] = ndgrid(reshape(L_in(ci, :), [], 1), ...
+                        reshape(V_in(ci, :), [], 1));
+                end
+            end
+            
+            if all(L(:) == round(L(:))) && all(V(:) == round(V(:)))
                 L = round(L);
                 V = round(V);
                 % direct access via indices
@@ -533,22 +636,29 @@ classdef btf < handle
 
                 % remove cosine term, if it is in the data
                 if obj.meta.cosine_flag
-                    img = img ./ obj.meta.L(L, 3);
+                    img = bsxfun(@rdivide, img, reshape(obj.meta.L(L, 3), 1, 1, []));
                 end
                 
                 % rearrange as image
-                img = reshape(img, [obj.meta.height, obj.meta.width, obj.meta.num_channels]);
-            elseif numel(L) == 2 && numel(V) == 2 || numel(L) == 3 && numel(V) == 3
+                img = permute(reshape(img, obj.meta.height, obj.meta.width, [], ...
+                    obj.meta.num_channels), [1, 2, 4, 3]);
+            elseif any(size(L) == 2) || any(size(L) == 3)
                 % access via light and view directions -> interpolate samples
-                img = zeros(obj.meta.width, obj.meta.height, obj.meta.num_channels, obj.data.class);
+                nlv = size(L(:, :), 2);
+                assert(nlv == size(V(:, :), 2));
+                
+                img = zeros(obj.meta.width, obj.meta.height, ...
+                    obj.meta.num_channels, nlv, obj.data.class);
                 [ls, vs, weights_l, weights_v] = obj.lookup_dirs(L, V);
-                for li = 1 : numel(ls)
-                    l = ls(li);
-                    for vi = 1 : numel(vs)
-                        v = vs(vi);
+                weights_l = reshape(weights_l', 1, 1, 3, []);
+                weights_v = reshape(weights_v', 1, 1, 3, []);
+                for li = 1 : 3
+                    l = ls(:, li);
+                    for vi = 1 : 3
+                        v = vs(:, vi);
                         
-                        img = img + weights_l(li) * weights_v(vi) * ...
-                            obj.decode_texture(l, v);
+                        img = img + bsxfun(@times, weights_l(:, :, li, :) .* weights_v(:, :, vi, :), ...
+                            obj.decode_texture(l, v));
                     end
                 end
             else
@@ -625,6 +735,12 @@ classdef btf < handle
             % or reset gui elements related to the progress display
             obj.progress_fcn = progress_callback;
         end
+        
+        function obj = set_cosine_flag(obj, flag)
+            % set the boolean flag that indicates whether the cosine of
+            % theta_light should be divided out of the data or not
+            obj.meta.cosine_flag = logical(flag(1));
+        end
     end
     
     methods (Access = protected)
@@ -658,10 +774,10 @@ classdef btf < handle
             % determine indices and weights for angular interpolation
             
             % transform input directions to parabolic coordinates
-            if numel(L) == 3 && numel(V) == 3
+            if size(L, 1) == 3 && size(V, 1) == 3
                 L_par = utils.cart2par(L);
                 V_par = utils.cart2par(V);
-            elseif numel(L) == 2 && numel(V) == 2
+            elseif size(L, 1) == 2 && size(V, 1) == 2
                 % we assume L and V to be in parabolic coordinates already!
                 % unfortunately, there is no sane way to distinguish those
                 % from spherical coordinates
@@ -670,30 +786,23 @@ classdef btf < handle
             end
             
             % lookup in Delaunay triangulation for both directions
-            [L_ti, L_bc] = obj.TriL.pointLocation(L_par);
-            [V_ti, V_bc] = obj.TriV.pointLocation(V_par);
-            if any(isnan(L_ti)) || any(isnan(V_ti))
-                % one of the queried directions is outside the
-                % triangulation, i.e. below the surface -> we don't need to
-                % interpolate at all
-                L_idxs = [];
-                V_idxs = [];
-                L_weights = [];
-                V_weights = [];
-                return;
-            end
+            [L_ti, L_weights] = obj.TriL.pointLocation(reshape(L_par, 2, [])');
+            [V_ti, V_weights] = obj.TriV.pointLocation(reshape(V_par, 2, [])');
+            valid = ~isnan(L_ti) & ~isnan(V_ti);
             
             % we cannot return indices into the bottom ring, as we don't
             % have any data available there
-            L_idxs_with_bottom_ring = obj.TriL.ConnectivityList(L_ti, :);
-            V_idxs_with_bottom_ring = obj.TriV.ConnectivityList(V_ti, :);
+            L_idxs = (obj.meta.nL + 1) * ones(numel(valid), 3);
+            V_idxs = (obj.meta.nV + 1) * ones(numel(valid), 3);
+            L_idxs(valid, :) = obj.TriL.ConnectivityList(L_ti(valid), :);
+            V_idxs(valid, :) = obj.TriV.ConnectivityList(V_ti(valid), :);
             
             % hence, we're only interested in those indices and weights
             % that are actually containted in the sampling
-            L_idxs = L_idxs_with_bottom_ring(L_idxs_with_bottom_ring < obj.meta.nL);
-            V_idxs = V_idxs_with_bottom_ring(V_idxs_with_bottom_ring < obj.meta.nV);
-            L_weights = L_bc(L_idxs_with_bottom_ring < obj.meta.nL);
-            V_weights = V_bc(V_idxs_with_bottom_ring < obj.meta.nV);
+            L_weights(L_idxs > obj.meta.nL) = 0;
+            V_weights(V_idxs > obj.meta.nV) = 0;
+            L_idxs(L_idxs > obj.meta.nL) = 1;
+            V_idxs(V_idxs > obj.meta.nV) = 1;
         end
         
         function progress(obj, value, str)

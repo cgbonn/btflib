@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -25,6 +25,18 @@
 %
 % Decode a single texel from a bidirectional image file (BDI).
 function texel = decode_bdi_texel(obj, x, y, l, v)
+    nC = obj.meta.num_channels;
+    nL = obj.meta.nL;
+    nV = obj.meta.nV;
+    nlv = numel(l);
+    assert(nlv == numel(v));
+    nxy = numel(x);
+    assert(nxy == numel(y));
+    
     abrdf = obj.decode_bdi_abrdf(x, y);
-    texel = abrdf(l, v, :);
+    texel = zeros(nxy, nC, nlv, 'single');
+    for ii = 1 : nlv
+        texel(:, :, ii) = abrdf(l(ii), v(ii), :, :);
+    end
+    texel = permute(texel, [3, 1, 2]);
 end

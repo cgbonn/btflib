@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -25,23 +25,40 @@
 %
 % Decode a single ABRDF from a bidirectional image file (BDI).
 function abrdf = decode_bdi_abrdf(obj, x, y)
-    [chunk_index, chunk_abrdf_index] = obj.get_bdi_chunk_index(x, y);
+    nC = obj.meta.num_channels;
+    nL = obj.meta.nL;
+    nV = obj.meta.nV;
+    n = numel(x);
+    assert(numel(y) == n);
+    x = x(:)';
+    y = y(:)';
     
-    if chunk_index == -1
-        abrdf = zeros(obj.meta.nL, obj.meta.nV, obj.meta.num_channels, 'single');
-        return;
+    abrdf = zeros(nC, nL, nV, n, 'single');
+    for ii = 1 : n
+        % to make this the least painful w.r.t. file access, x coordinates
+        % should be unrolled first, then y. this is due to the fact that
+        % chunks store several scan lines, which are along the x-dimension
+        % of the textures. so use ndgrid(xs, ys) and not meshgrid(xs, ys).
+        xi = x(ii);
+        yi = y(ii);
+        [chunk_index, chunk_abrdf_index] = obj.get_bdi_chunk_index(xi, yi);
+
+        if chunk_index == -1
+            continue;
+        end
+
+        if obj.data.chunks_buffered(chunk_index)
+            abrdf_tmp = obj.data.chunks((chunk_abrdf_index - 1) * obj.meta.abrdf_size + 1: ...
+                chunk_abrdf_index * obj.meta.abrdf_size, chunk_index);
+        else
+            obj.data.fid = fopen(obj.meta.file_name, 'r');
+            abrdf_tmp = obj.get_bdi_chunk([], xi, yi);
+            fclose(obj.data.fid);
+        end
+
+        % convert half precision floats to single precision floats & rearrange data
+        abrdf(:, :, :, ii) = reshape(halfprecision(abrdf_tmp, 'single'), nC, nL, nV);
     end
     
-    if obj.data.chunks_buffered(chunk_index)
-        abrdf = obj.data.chunks((chunk_abrdf_index - 1) * obj.meta.abrdf_size + 1: ...
-            chunk_abrdf_index * obj.meta.abrdf_size, chunk_index);
-    else
-        obj.data.fid = fopen(obj.meta.file_name, 'r');
-        abrdf = obj.get_bdi_chunk([], x, y);
-        fclose(obj.data.fid);
-    end
-    
-    % convert half precision floats to single precision floats & rearrange data
-    abrdf = permute(reshape(halfprecision(abrdf, 'single'), ...
-        obj.meta.num_channels, obj.meta.nL, obj.meta.nV), [2, 3, 1]);
+    abrdf = permute(abrdf, [2, 3, 4, 1]);
 end

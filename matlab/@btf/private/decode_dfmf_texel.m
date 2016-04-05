@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -38,20 +38,23 @@ function texel = decode_dfmf_texel(obj, x, y, l, v)
     w = obj.meta.width;
     U = obj.data.U;
     SxV = obj.data.SxV;
+    nxy = numel(x);
+    nlv = numel(l);
+    assert(nxy == numel(y) && nlv == numel(v));
     
     % determine transposition of BTF-matrix
-    texel = zeros(1, nC, obj.data.class);
+    texel = zeros(nlv, nxy, nC, obj.data.class);
     xyInds = sub2ind([h, w], y, x);
     lvInds = sub2ind([nL, nV], l, v);
     if size(U{1}, 1) == nL * nV
         % abrdfs stacked column-wise
         for c = 1 : nC
-            texel(c) = squeeze(U{c}(lvInds, :) * SxV{c}(xyInds, :)');
+            texel(:, :, c) = U{c}(lvInds, :) * SxV{c}(xyInds, :)';
         end
     elseif size(U{1}, 1) == h * w
         % images stacked column-wise
         for c = 1 : obj.nC
-            texel(c) = squeeze(U{c}(xyInds, :) * SxV{c}(lvInds, :)');
+            texel(:, :, c) = SxV{c}(lvInds, :) * U{c}(xyInds, :)';
         end
     else
         error('unknown format of BTF U-component');

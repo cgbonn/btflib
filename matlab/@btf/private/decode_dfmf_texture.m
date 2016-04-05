@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2015-03-30
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -38,14 +38,16 @@ function img = decode_dfmf_texture(obj, l, v)
     w = obj.meta.width;
     U = obj.data.U;
     SxV = obj.data.SxV;
+    n = numel(l);
+    assert(numel(v) == n);
     
     % determine transposition of BTF-matrix
-    img = zeros(h * w, nC, obj.data.class);
+    img = zeros(h * w, nC, n, obj.data.class);
     if size(U{1}, 1) == nL * nV
         % abrdfs stacked column-wise
         lvInd = sub2ind([nL, nV], l, v);
         for c = 1 : nC
-            img(:, c) = SxV{c} * U{c}(lvInd, :)';
+            img(:, c, :) = SxV{c} * U{c}(lvInd, :)';
         end
     elseif size(U{1}, 1) == h * w
         % images stacked column-wise
@@ -57,5 +59,5 @@ function img = decode_dfmf_texture(obj, l, v)
         error('unknown format of BTF U-component');
     end
     
-    img = permute(reshape(img, [w, h, nC]), [2, 1, 3]);
+    img = permute(reshape(img, [w, h, nC, n]), [2, 1, 4, 3]);
 end

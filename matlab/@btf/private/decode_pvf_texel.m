@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2014-09-10
+% * last modification date: 2016-04-05
 % *
 % * This file is part of btflib.
 % *
@@ -34,18 +34,31 @@ function texel = decode_pvf_texel(obj, x, y, l, v)
     Ms = obj.data.Ms; % means
     Cs = obj.data.Cs; % coefficients
     Ws = obj.data.Ws; % weights
+    nxy = numel(x);
+    nlv = numel(l);
+    assert(nxy == numel(y) && nlv == numel(v));
     
     % determine transposition of BTF-matrix
     if size(Cs{1}, 1) == nC * nL
         % light fields stacked column-wise
-        clInds = sub2ind([nC, nL], 1 : nC, repmat(l, 1, nC));
+        texel = zeros(nxy, nc, nlv, obj.data.class);
         xyInd = sub2ind([h, w], y, x);
-        texel = squeeze(Cs{v}(clInds, :) * Ws{v}(xyInd, :)' + Ms{v}(clInds));
+        for ii = 1 : nlv
+            clInds = sub2ind([nC, nL], repmat((1 : nC)', 1, n), repmat(l(ii), 1, nC));
+            texel(:, :, ii) = reshape(Ws{v(ii)}(xyInd, :) * Cs{v(ii)}(clInds, :) + ...
+                Ms{v(ii)}(clInds)', nC, nxy);
+        end
+        texel = permute(texel, [3, 1, 2]);
     elseif size(Cs{1}, 1) == nC * h * w
         % images stacked column-wise
-        cxyInds = sub2ind([nC, h, w], 1 : nC, ...
-            repmat(y, 1, nC),repmat(x, 1, nC));
-        texel = squeeze(Cs{v}(cxyInds, :) * Ws{v}(l, :)' + Ms{v}(cxyInds));
+        texel = zeros(nC, nxy, nlv, obj.data.class);
+        cxyInds = sub2ind([nC, h, w], repmat((1 : nC)', 1, nxy), ...
+            repmat(y(:)', nC, 1), repmat(x(:)', nC, 1));
+        for ii = 1 : nlv
+            texel(:, :, ii) = reshape(Cs{v(ii)}(cxyInds, :) * ...
+                Ws{v(ii)}(l(ii), :)', nC, nxy, 1) + Ms{v(ii)}(cxyInds);
+        end
+        texel = permute(texel, [3, 2, 1]);
     else
         error('unknown format of BTF U-component');
     end
