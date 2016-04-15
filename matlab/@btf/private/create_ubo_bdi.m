@@ -89,9 +89,11 @@ function obj = create_ubo_bdi(obj, meta, data)
     if size(obj.data.chunks, 1) ~= obj.meta.chunk_size
         if numel(obj.data.chunks) ~= obj.meta.chunk_size * obj.meta.num_chunks
             obj.data.chunks = reshape(obj.data.chunks, [nC, nL, nV, w, h]);
-            scan_lines_missing = mod(obj.meta.height, obj.meta.scan_lines_per_chunk);
+            scan_lines_missing = obj.meta.scan_lines_per_chunk - ...
+                mod(obj.meta.height, obj.meta.scan_lines_per_chunk);
             obj.data.chunks = cat(5, obj.data.chunks, ...
                 zeros(nC, nL, nV, w, scan_lines_missing, 'like', obj.data.chunks));
+            obj.data.chunks = reshape(obj.data.chunks, nC * nL * nV, w * (h + scan_lines_missing));
         end
         obj.data.chunks = reshape(obj.data.chunks, obj.meta.chunk_size, obj.meta.num_chunks);
     end
