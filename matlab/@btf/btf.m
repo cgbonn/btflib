@@ -510,9 +510,13 @@ classdef btf < handle
                 V_in = V;
                 L = zeros(3, dim_L(2), dim_V(2));
                 V = zeros(3, dim_L(2), dim_V(2));
-                for ci = 1 : 3
-                    [L(ci, :, :), V(ci, :, :)] = ndgrid(reshape(L_in(ci, :), [], 1), ...
-                        reshape(V_in(ci, :), [], 1));
+                if any(size(L_in) == 1)
+                    [L, V] = ndgrid(L_in, V_in);
+                elseif any(size(L_in) == 3)
+                    for ci = 1 : 3
+                        [L(ci, :, :), V(ci, :, :)] = ndgrid(reshape(L_in(ci, :), [], 1), ...
+                            reshape(V_in(ci, :), [], 1));
+                    end
                 end
             end
             

@@ -36,9 +36,7 @@ function obj = create_meta_struct(obj, varargin)
     p.addParameter('light_dirs', [], @(x) isnumeric(x) && size(x, 2) == 3);
     p.addParameter('view_dirs', [], @(x) isnumeric(x) && size(x, 2) == 3);
     p.addParameter('cosine_flag', false, @(x) isscalar(x) && (isnumeric(x) || islogical(x)));
-    if isfield(varargin{1}, 'dynamic_range_reduction_method')
-        p.addParameter('dynamic_range_reduction_method', 0, @(x) isscalar(x) && isnumeric(x));
-    end
+    p.addParameter('dynamic_range_reduction_method', 0, @(x) isscalar(x) && isnumeric(x));
     p.parse(varargin{:});
     
     % those are normally stored in the UBO BTF file formats
@@ -59,6 +57,7 @@ function obj = create_meta_struct(obj, varargin)
     % channel and other information
     obj.meta.channel_names = 'RGB';
     obj.meta.num_rotations = 0;
+    obj.meta.dynamic_range_reduction_method = p.Results.dynamic_range_reduction_method;
     
     % sampling information
     obj.meta.L = p.Results.view_dirs;
