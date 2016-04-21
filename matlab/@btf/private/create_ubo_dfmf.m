@@ -51,13 +51,14 @@ function obj = create_ubo_dfmf(obj, meta, data)
         all(cellfun(@(y) size(y, 1) == w * h || size(y, 1) == nL * nV, x)));
     p.addParameter('SxV', [], @(x) iscell(x) && numel(x) == nC && ...
         all(cellfun(@(y) size(y, 1) == w * h || size(y, 1) == nL * nV, x)));
-    p.addParameter('S', [], @(x) (isnumeric(x) || iscell(x)) && numel(x) == nC);
+    p.addParameter('S', [], @(x) (isnumeric(x) && numel(x) == nC) || (iscell(x) ...
+        && all(cellfun(@numel, x) == nC)));
     p.parse(data);
     
     % assign compontens
     obj.meta.num_components = size(p.Results.U{1}, 2);
     if isempty(p.Results.S)
-        obj.data.S = ones(obj.meta.num_components, 1);
+        obj.data.S = repmat({ones(obj.meta.num_components, 1)}, nC, 1);
     else
         obj.data.S = p.Results.S;
     end
