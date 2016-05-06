@@ -69,7 +69,7 @@ function mat = fread_matrix(fid, scalar_type, rows, columns, columns_file)
 %         end
 
         % get byte size of scalars in file
-        size_of_scalar = sizeof(scalar_type_file);
+        size_of_scalar = utils.sizeof(scalar_type_file);
         
         mat = fread(fid, [rows, columns], ...
             sprintf('%d*%s=>%s', columns, scalar_type_file, scalar_type_mem), ...
