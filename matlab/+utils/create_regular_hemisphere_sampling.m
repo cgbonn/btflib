@@ -34,7 +34,7 @@
 % format as both cartesian coordinates and optionally as spherical
 % coordinates. The returned arrays respectively contain the xyz and the two
 % spherical coordinates in the first dimension.
-function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
+function [sampling, sampling_sph, sampling_th, sampling_ph] = create_regular_hemisphere_sampling(...
         inclination_res, azimuth_res, wrap_azimuth, avoid_grazing)
     
     if ~exist('inclination_res', 'var')
@@ -54,10 +54,10 @@ function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
     end
     
     if avoid_grazing
-        thetas = linspace(0, pi / 2, inclination_res + 1);
+        thetas = linspace(eps, pi / 2, inclination_res + 1);
         thetas = thetas(1 : end - 1);
     else
-        thetas = linspace(0, pi / 2, inclination_res);
+        thetas = linspace(eps, pi / 2, inclination_res);
     end
     
     if wrap_azimuth
@@ -66,6 +66,9 @@ function [sampling, sampling_sph] = create_regular_hemisphere_sampling(...
         phis = linspace(0, 2 * pi, azimuth_res + 1);
         phis = phis(1 : end - 1);
     end
+    
+    sampling_th = thetas;
+    sampling_ph = phis;
     
     [thetas, phis] = ndgrid(thetas, phis);
     
