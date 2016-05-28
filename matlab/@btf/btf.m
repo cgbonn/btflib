@@ -91,7 +91,7 @@ classdef btf < handle
             % light_dirs ([]): isnumeric(x) && size(x, 2) == 3
             % view_dirs ([]): isnumeric(x) && size(x, 2) == 3
             % cosine_flag (false): isscalar(x) && islogical(x)
-            % dynamic_range_reduction_method (0): iscalar(x) && isnumeric(x)
+            % dynamic_range_reduction_method (0): isscalar(x) && isnumeric(x)
             % color_model (0): isnumeric(x) && isscalar(x); [DFMF]; see btf.undecorrelate
             % color_mean ([0, 0, 0]): isnumeric(x); [DFMF]
             % color_transformation_matrix (eye(3)): isnumeric(x); [DFMF]
@@ -146,7 +146,7 @@ classdef btf < handle
             %	for each view slot
             p = inputParser;
             p.StructExpand = false;
-            p.addParamValue('quality', 1, @(x) iscalar(x) && isnumeric(x));
+            p.addParamValue('quality', 1, @(x) isscalar(x) && isnumeric(x));
             p.addParamValue('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
             
             file_name = varargin{1};
