@@ -32,6 +32,9 @@
 %     optionally the radius in its third column or row, or separate N x 1 or 1 x
 %     N arrays of these three quantities
 %   - it returns an N x 3 or 3 x N array of cartesian coordinates
+%   - an alternative is to input 2 or 3 separate input arrays respectively
+%     containing all inclination angles, all azimuth angles and optionally as
+%     the third argument the radial component
 %
 % Usage:
 %   xyz = sph2cart2(sph)
