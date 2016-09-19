@@ -175,14 +175,16 @@ classdef btf < handle
                 obj.meta.file_name = '';
                 
                 switch obj.format_str
-                    case 'BDI'
+                    case {'bdi', 'BDI'}
                         obj.create_ubo_bdi(p.Results.meta, p.Results.data);
-                    case 'DFMF'
+                    case {'dfmf', 'DFMF'}
                         obj.create_ubo_dfmf(p.Results.meta, p.Results.data);
-                    case 'FMF'
+                    case {'fmf', 'FMF'}
                         obj.create_ubo_fmf(p.Results.meta, p.Results.data);
-                    case 'PVF'
+                    case {'pvf', 'PVF'}
                         obj.create_ubo_pvf(p.Results.meta, p.Results.data);
+                    otherwise
+                        error('format_str %s not supported', obj.format_str);
                 end
             end
         end
@@ -194,13 +196,13 @@ classdef btf < handle
             frewind(fid);
 
             switch obj.format_str
-                case 'BDI'
+                case {'bdi', 'BDI'}
                     [obj.data, obj.meta] = read_ubo_bdi(fid, signature, header_flag);
-                case 'DFMF'
+                case {'dfmf', 'DFMF'}
                     [obj.data, obj.meta] = read_ubo_dfmf(fid, signature, obj.quality);
-                case 'FMF'
+                case {'fmf', 'FMF'}
                     [obj.data, obj.meta] = read_ubo_fmf(fid, signature, header_flag, obj.quality);
-                case 'PVF'
+                case {'pvf', 'PVF'}
                     [obj.data, obj.meta] = read_ubo_pvf(fid, signature, obj.quality);
                 otherwise
                     error(['BTF: This format is currently unsupportet, ', ...
@@ -227,11 +229,11 @@ classdef btf < handle
             fid = fopen(file_name, 'w');
             
             switch obj.format_str
-                case 'BDI'
+                case {'bdi', 'BDI'}
                     obj.write_ubo_bdi(fid);
-                case 'DFMF'
+                case {'dfmf', 'DFMF'}
                     write_ubo_dfmf(fid, obj.data, obj.meta);
-                case 'FMF'
+                case {'fmf', 'FMF'}
                     write_ubo_fmf(fid, obj.data, obj.meta);
                 otherwise
                     error('BTF: writing is only implemented for BDI or (D)FMF format!');

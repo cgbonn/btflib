@@ -43,7 +43,7 @@ function obj = create_meta_struct(obj, varargin)
     obj.meta.measurement_setup = '';
     obj.meta.image_sensor = '';
     obj.meta.light_source = '';
-    obj.meta.ppmm = '';
+    obj.meta.ppmm = 1;
     obj.meta.rgb_scale_factor = [1, 1, 1];
     obj.meta.xml = '';
     
@@ -52,10 +52,10 @@ function obj = create_meta_struct(obj, varargin)
     obj.meta.nL = p.Results.num_lights;
     obj.meta.width = p.Results.width;
     obj.meta.height = p.Results.height;
-    obj.meta.num_channels = 3;
+    obj.meta.num_channels = p.Results.num_channels;
     
     % channel and other information
-    obj.meta.channel_names = 'RGB';
+    obj.meta.channel_names = {'R', 'G', 'B'};
     obj.meta.num_rotations = 0;
     obj.meta.dynamic_range_reduction_method = p.Results.dynamic_range_reduction_method;
     

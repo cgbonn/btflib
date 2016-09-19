@@ -42,7 +42,7 @@ function write_bdi_chunks(obj, fid)
     for chunk_index = 1 : num_chunks
         fprintf('extracting chunk %d / %d... ', chunk_index, num_chunks);
         
-        if strcmp(obj.format_str, 'BDI')
+        if strcmpi(obj.format_str, 'BDI')
             % get whole chunk at once
             if obj.data.chunks_buffered(chunk_index)
                 chunk = obj.data.chunks(:, chunk_index);
@@ -70,5 +70,5 @@ function write_bdi_chunks(obj, fid)
         % FIXME: why the typecasting?
         fwrite(fid, typecast(chunk(:), 'uint8'), 'uint8');
     end
-    fclose(obj.data.fid);
+%     fclose(fid);
 end
