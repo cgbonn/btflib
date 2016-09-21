@@ -412,6 +412,28 @@ classdef btf < handle
             vaz = v_sph(2);
         end
         
+        function [normal_map, height_map] = get_normals_from_height_map(obj)
+            % for a BTF resampled to its height field, this function returns the
+            % normals computed from this height map
+            if ~isfield(obj.data, 'height_map')
+                error('This BTF does not store a height field, cannot compute the normals!');
+            end
+            height_map = obj.data.height_map;
+            [height, width] = size(height_map);
+            
+            ppmm = obj.meta.ppmm;
+            dx = 1 / ppmm;
+            dy = 1 / ppmm;
+            
+            [hx, hy] = gradient(height_map);
+            normal_map = cat(3, -hx * dy, -hy * dx, ones(height, width) * dx * dy);
+            normal_map = normal_map ./ repmat(sqrt(sum(normal_map .^ 2, 3)), [1, 1, 3]);
+        end
+        
+        function name = get_name(obj)
+            name = ['BDI ', obj.meta.file_name];
+        end
+        
         function abrdf = decode_abrdf(obj, x, y, form_cart_prod)
             % decode a full ABRDF for a given pair of x- and y-coordinates
             %
