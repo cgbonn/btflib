@@ -60,7 +60,7 @@ function obj = create_meta_struct(obj, varargin)
     obj.meta.dynamic_range_reduction_method = p.Results.dynamic_range_reduction_method;
     
     % sampling information
-    obj.meta.L = p.Results.view_dirs;
+    obj.meta.L = p.Results.light_dirs;
     obj.meta.V = p.Results.view_dirs;
     obj.meta.cosine_flag = p.Results.cosine_flag;
     

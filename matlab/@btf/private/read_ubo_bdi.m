@@ -133,4 +133,5 @@ function [data, meta] = read_ubo_bdi(fid, signature, header_flag)
     % buffered are read from file (this is still quite slow and therefore by
     % default only buffered data is displayed, whereas the rest is set black)
     data.only_use_buffered = true;
+    data.class = 'single';
 end
