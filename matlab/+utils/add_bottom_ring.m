@@ -31,6 +31,7 @@
 % The method then tries to determine the number of vectors on the lowest
 % such plane and adds the same number, or at least ten in the z = 0 plane.
 function dirs = add_bottom_ring(dirs)
+    assert(size(dirs, 1) == 3);
     % we're only interested in the inclination angle
     dirs_z = dirs(3, :);
 

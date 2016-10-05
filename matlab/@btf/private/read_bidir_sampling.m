@@ -46,5 +46,15 @@ function meta = read_bidir_sampling(fid, meta)
     meta.L = utils.sph2cart2(L);
     meta.V = utils.sph2cart2(V);
     
+    if size(L, 1) == 1
+        meta.L = meta.L';
+        assert(size(meta.L, 2) == 3);
+    end
+    
+    if size(V, 1) == 1
+        meta.V = meta.V';
+        assert(size(meta.V, 2) == 3);
+    end
+    
     meta.nL = size(L, 1);
 end
