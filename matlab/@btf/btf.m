@@ -729,7 +729,14 @@ classdef btf < handle
             % x num_views x width x height x num_channels)
             switch obj.format_str
                 case 'BDI'
-                    error('not implemented yet!');
+                    if numel(obj.data.chunks) == obj.meta.num_channels * ...
+                            obj.meta.nL * obj.meta.nV * obj.meta.width * obj.meta.height
+                        tensor = halfprecision(reshape(obj.data.chunks, obj.meta.num_channels, ...
+                            obj.meta.nL, obj.meta.nV, obj.meta.width, obj.meta.height), 'single');
+                    else
+                        error(['Tensor can only be returned for fully buffered BDI. ', ...
+                            'Please call buffer_bdi().']);
+                    end
                 case 'DFMF'
                     tensor = cell(obj.meta.num_channels, 1);
                     for c = 1 : obj.meta.num_channels
