@@ -149,8 +149,14 @@ classdef btf < handle
             p.addParamValue('quality', 1, @(x) isscalar(x) && isnumeric(x));
             p.addParamValue('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
             
+            [~, supported_formats] = ubo_btf_signatures();
+            
             file_name = varargin{1};
-            if ischar(file_name) && exist(file_name, 'file')
+            if ~ischar(file_name)
+                error('The first input argument must be a string (file name or format string).');
+            end
+            if ~ismember(lower(file_name), lower(supported_formats))
+                % supposedly the path to a BTF file
                 if ~exist(file_name, 'file')
                     error('BTF file not found.');
                 end
@@ -161,9 +167,9 @@ classdef btf < handle
                 
                 % read from file
                 obj = obj.read(file_name);
-            else
+            elseif ismember(lower(file_name), lower(supported_formats))
                 % create btf object directly from data
-                [~, supported_formats] = ubo_btf_signatures();
+                
                 p.addRequired('format_str', @(x) any(validatestring(x, supported_formats)));
                 p.addRequired('meta', @isstruct);
                 p.addRequired('data', @(x) isstruct(x) || isnumeric(x));
@@ -544,10 +550,11 @@ classdef btf < handle
                 end
             end
             
-            if all(x(:) == round(x(:))) && all(y(:) == round(y(:))) && ...
-                    all(L(:) == round(L(:))) && all(V(:) == round(V(:)))
-                L = uint32(L);
-                V = uint32(V);
+            % L / V could contain indices or actual directions, we need some
+            % stupid way to distinguish the two cases...
+            if numel(L) == 1 || numel(V) == 1 || ...
+                    isinteger(x) || isinteger(y) || ...
+                    isinteger(L) || isinteger(V)
                 % direct access via indices
                 switch obj.format_str
                     case 'BDI'
@@ -591,7 +598,7 @@ classdef btf < handle
                         v = vs(:, vi);
                         
                         texel = texel + bsxfun(@times, weights_l(:, li) .* weights_v(:, vi), ...
-                            obj.decode_texel(x, y, l, v));
+                            obj.decode_texel(int32(x), int32(y), int32(l), int32(v)));
                     end
                 end
             else
@@ -639,7 +646,8 @@ classdef btf < handle
                 end
             end
             
-            if all(L(:) == round(L(:))) && all(V(:) == round(V(:)))
+            % do L / V contain integer indices or vectors?
+            if numel(L) ==  1 || numel(V) == 1 || isinteger(L) || isinteger(V)
                 L = round(L);
                 V = round(V);
                 % direct access via indices
@@ -686,7 +694,7 @@ classdef btf < handle
                         v = vs(:, vi);
                         
                         img = img + bsxfun(@times, weights_l(:, :, li, :) .* weights_v(:, :, vi, :), ...
-                            obj.decode_texture(l, v));
+                            obj.decode_texture(int32(l), int32(v)));
                     end
                 end
             else
