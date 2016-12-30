@@ -35,7 +35,11 @@ function img = decode_bdi_texture(obj, l, v)
     assert(numel(v) == n);
     n_c = obj.meta.num_channels;
     n_abrdfs = obj.meta.abrdfs_per_chunk;
-    img = zeros(n_c, n, obj.meta.width, obj.meta.height, 'uint16');
+    data_type = 'uint16';
+    if isfield(obj.data, 'chunks') && ~isempty(obj.data.chunks)
+        data_type = class(obj.data.chunks);
+    end
+    img = zeros(n_c, n, obj.meta.width, obj.meta.height, data_type);
 
     for ii = 1 : n
         clvxy_inds = sub2ind([obj.meta.num_channels, obj.meta.nL, obj.meta.nV, n_abrdfs], ...
@@ -82,5 +86,8 @@ function img = decode_bdi_texture(obj, l, v)
     end
     
     % convert half precision floats to single precision floats
-    img = permute(halfprecision(img, 'single'), [4, 3, 2, 1]);
+    if strcmp(data_type, 'uint16')
+        img = halfprecision(img, 'single');
+    end
+    img = permute(img, [4, 3, 2, 1]);
 end

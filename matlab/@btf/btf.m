@@ -4,7 +4,7 @@
 % * authors:
 % *  - Sebastian Merzbach <merzbach@cs.uni-bonn.de>
 % *
-% * last modification date: 2016-04-05
+% * last modification date: 2016-12-30
 % *
 % * This file is part of btflib.
 % *
@@ -296,6 +296,14 @@ classdef btf < handle
         function bdi = is_bdi(obj)
             % check if the object is a uncompressed BDI
             bdi = strcmp(obj.format_str, 'BDI');
+        end
+        
+        function tf = is_spectral(obj)
+            % returns true if the BTF object stores a wavelength sampling
+            tf = false;
+            if isfield(obj.meta, 'wavelengths') && isnumeric(obj.meta.wavelengths)
+                tf = true;
+            end
         end
         
         function obj = buffer_bdi(obj, max_free_mem_percentage)
@@ -651,14 +659,14 @@ classdef btf < handle
                 L = round(L);
                 V = round(V);
                 % direct access via indices
-                switch obj.format_str
-                    case 'BDI'
+                switch lower(obj.format_str)
+                    case 'bdi'
                         img = obj.decode_bdi_texture(L, V);
-                    case 'DFMF'
+                    case 'dfmf'
                         img = obj.decode_dfmf_texture(L, V);
-                    case 'FMF'
+                    case 'fmf'
                         img = obj.decode_fmf_texture(L, V);
-                    case 'PVF'
+                    case 'pvf'
                         img = obj.decode_pvf_texture(L, V);
                     otherwise
                         error('decoder for BTF in %s format not implemented!', obj.format_str);

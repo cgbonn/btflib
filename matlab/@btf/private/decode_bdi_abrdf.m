@@ -33,6 +33,10 @@ function abrdf = decode_bdi_abrdf(obj, x, y)
     x = x(:)';
     y = y(:)';
     
+    data_type = 'uint16';
+    if isfield(obj.data, 'chunks') && ~isempty(obj.data.chunks)
+        data_type = class(obj.data.chunks);
+    end
     abrdf = zeros(nC, nL, nV, n, 'single');
     for ii = 1 : n
         % to make this the least painful w.r.t. file access, x coordinates
@@ -56,8 +60,12 @@ function abrdf = decode_bdi_abrdf(obj, x, y)
             fclose(obj.data.fid);
         end
 
+        if strcmp(data_type, 'uint16')
+            abrdf_tmp = halfprecision(abrdf_tmp, 'single');
+        end
+        
         % convert half precision floats to single precision floats & rearrange data
-        abrdf(:, :, :, ii) = reshape(halfprecision(abrdf_tmp, 'single'), nC, nL, nV);
+        abrdf(:, :, :, ii) = reshape(abrdf_tmp, nC, nL, nV);
     end
     
     abrdf = permute(abrdf, [2, 3, 4, 1]);
