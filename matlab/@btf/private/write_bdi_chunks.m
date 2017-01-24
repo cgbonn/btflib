@@ -38,7 +38,13 @@ function write_bdi_chunks(obj, fid)
     logical_abrdf_indices = find(obj.meta.mask');
     num_chunks = ceil(numel(logical_abrdf_indices) / abrdfs_per_chunk);
     
-    obj.data.fid = fopen(obj.meta.file_name, 'r');
+    % store fid for potential later use
+    if ~isempty(fopen(fid))
+        obj.data.fid = fid;
+    else
+        obj.data.fid = fopen(obj.meta.file_name, 'r');
+    end
+    
     for chunk_index = 1 : num_chunks
         fprintf('extracting chunk %d / %d... ', chunk_index, num_chunks);
         
@@ -65,10 +71,15 @@ function write_bdi_chunks(obj, fid)
             end
         end
         
+        % ensure writing data in halfprecision float
+        if ~isa(chunk, 'uint16')
+            chunk = halfprecision(chunk);
+        end
+        
         fprintf('writing to file...\n');
-        fwrite(fid, numel(chunk)  * utils.sizeof('uint16'), 'uint32');
+        fwrite(obj.data.fid, numel(chunk)  * utils.sizeof('uint16'), 'uint32');
         % FIXME: why the typecasting?
-        fwrite(fid, typecast(chunk(:), 'uint8'), 'uint8');
+        fwrite(obj.data.fid, typecast(chunk(:), 'uint8'), 'uint8');
     end
 %     fclose(fid);
 end

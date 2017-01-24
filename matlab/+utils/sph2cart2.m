@@ -54,7 +54,7 @@ function xyz = sph2cart2(varargin)
             if size(varargin{1}, 2) == 3
                 radius = varargin{1}(:, 3);
             else
-                radius = ones(n, class(inclination)); %#ok<ZEROLIKE>
+                radius = ones(n, class(inclination));
             end
         else
             % one input matrix of dimensions 2 x N or 3 x N
@@ -65,7 +65,7 @@ function xyz = sph2cart2(varargin)
             if size(varargin{1}, 1) == 3
                 radius = varargin{1}(3, :);
             else
-                radius = ones(n, class(inclination)); %#ok<ZEROLIKE>
+                radius = ones(n, class(inclination));
             end
         end
     elseif numel(varargin) >= 2
@@ -77,11 +77,11 @@ function xyz = sph2cart2(varargin)
         if numel(varargin) >= 3
             radius = varargin{3};
         else
-            radius = ones(size(inclination), class(inclination)); %#ok<ZEROLIKE>
+            radius = ones(size(inclination), class(inclination));
         end
     end
     
-    xyz = zeros([3, prod(n)], class(azimuth)); %#ok<ZEROLIKE>
+    xyz = zeros([3, prod(n)], class(azimuth));
     
     rsinelev = radius .* sin(inclination);
     xyz(1, :) = reshape(rsinelev .* cos(azimuth), 1, []);

@@ -64,6 +64,20 @@ function meta = read_meta_data(fid)
             str_size = fread(fid, 1, '*uint32');
             meta.channel_names{ci} = fread(fid, str_size, '*char');
         end
+        
+        % deal with multispectral BTFs
+        if meta.num_channels ~= 3
+            try
+                meta.wavelengths = str2double(meta.channel_names(:)');
+                if any(isnan(meta.wavelengths))
+                    error('non-numeric channel names?');
+                end
+            catch err
+                error(['problem during conversion of channel names to double: %s', ...
+                    '\nstored channel names are: ', repmat('''%s'' ', 1, numel(meta.channel_names))], ...
+                    err.message, meta.channel_names{:});
+            end
+        end
     else
         meta.channel_names = 'RGB';
     end

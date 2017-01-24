@@ -25,7 +25,7 @@
 %
 % Given meta struct, this method sanity checks the struct values and assigns
 % them to the meta struct of a btf object.
-function obj = create_meta_struct(obj, varargin)
+function meta = create_meta_struct(varargin)
     p = inputParser;
     p.KeepUnmatched = true;
     p.addParameter('width', -1, @(x) isscalar(x) && isnumeric(x) && x > 0);
@@ -40,34 +40,35 @@ function obj = create_meta_struct(obj, varargin)
     p.parse(varargin{:});
     
     % those are normally stored in the UBO BTF file formats
-    obj.meta.measurement_setup = '';
-    obj.meta.image_sensor = '';
-    obj.meta.light_source = '';
-    obj.meta.ppmm = 1;
-    obj.meta.rgb_scale_factor = [1, 1, 1];
-    obj.meta.xml = '';
+    meta.measurement_setup = '';
+    meta.image_sensor = '';
+    meta.light_source = '';
+    meta.ppmm = 1;
+    meta.rgb_scale_factor = [1, 1, 1];
+    meta.xml = '';
+    meta.file_name = '';
     
     % set BTF / BDI dimensions
-    obj.meta.nV = p.Results.num_views;
-    obj.meta.nL = p.Results.num_lights;
-    obj.meta.width = p.Results.width;
-    obj.meta.height = p.Results.height;
-    obj.meta.num_channels = p.Results.num_channels;
+    meta.nV = p.Results.num_views;
+    meta.nL = p.Results.num_lights;
+    meta.width = p.Results.width;
+    meta.height = p.Results.height;
+    meta.num_channels = p.Results.num_channels;
     
     % channel and other information
-    obj.meta.channel_names = {'R', 'G', 'B'};
-    obj.meta.num_rotations = 0;
-    obj.meta.dynamic_range_reduction_method = p.Results.dynamic_range_reduction_method;
+    meta.channel_names = {'R', 'G', 'B'};
+    meta.num_rotations = 0;
+    meta.dynamic_range_reduction_method = p.Results.dynamic_range_reduction_method;
     
     % sampling information
-    obj.meta.L = p.Results.light_dirs;
-    obj.meta.V = p.Results.view_dirs;
-    obj.meta.cosine_flag = p.Results.cosine_flag;
+    meta.L = p.Results.light_dirs;
+    meta.V = p.Results.view_dirs;
+    meta.cosine_flag = p.Results.cosine_flag;
     
     % create default dome sampling if the input dimensions agree
-    if isempty(obj.meta.L) || isempty(obj.meta.V)
-        if obj.meta.nL == 151 && obj.meta.nV == 151
-            [obj.meta.L, obj.meta.V] = utils.create_ubo_dome1_sampling();
+    if isempty(meta.L) || isempty(meta.V)
+        if meta.nL == 151 && meta.nV == 151
+            [meta.L, meta.V] = utils.create_ubo_dome1_sampling();
         else
             error('please provide arrays for the angular sampling!');
         end
@@ -76,7 +77,16 @@ function obj = create_meta_struct(obj, varargin)
     % handle all remaining meta data fields
     if ~isempty(fieldnames(p.Unmatched))
         for f = fieldnames(p.Unmatched)'
-            obj.meta.(f{1}) = p.Unmatched.(f{1});
+            meta.(f{1}) = p.Unmatched.(f{1});
         end
+    end
+    
+    % ensure wavelengths are a row vector
+    if isfield(p.Unmatched, 'wavelengths')
+        wavelengths = p.Unmatched.wavelengths;
+        if size(wavelengths, 1) ~= 1
+            wavelengths = wavelengths';
+        end
+        meta.wavelengths = wavelengths;
     end
 end

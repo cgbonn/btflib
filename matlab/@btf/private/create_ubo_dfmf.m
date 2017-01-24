@@ -26,7 +26,7 @@
 % Given meta and data structs, this method constructs a DFMF btf object. See the
 % documentation of the btf constructor for further instructions.
 function obj = create_ubo_dfmf(obj, meta, data)
-    obj.create_meta_struct(meta);
+    obj.meta = utils.create_meta_struct(meta);
     
     w = obj.meta.width;
     h = obj.meta.height;
