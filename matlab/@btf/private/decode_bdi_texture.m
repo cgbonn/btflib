@@ -61,25 +61,34 @@ function img = decode_bdi_texture(obj, l, v)
             if any(obj.data.chunks_buffered)
                 % only display buffered data, don't read anything from file
                 tmp = reshape(obj.data.chunks(clvxy_inds, :), n_c, obj.meta.width, []);
-                img(:, :, 1 : size(tmp, 3)) = tmp;
+                img(:, ii, :, 1 : size(tmp, 3)) = tmp;
             end
 
             if obj.data.textures_from_file && ~obj.data.only_use_buffered
                 % optionally fallback to reading from file for unbuffered chunks
                 chunks_missing = find(~obj.data.chunks_buffered);
-                obj.data.fid = fopen(obj.meta.file_name, 'r');
-                for chunk_index = chunks_missing
+                fid = fopen(obj.meta.file_name, 'r');
+                for ci = 1 : numel(chunks_missing)
+                    chunk_index = chunks_missing(ci);
                     % only assign the texels that are not masked!
                     storage_abrdf_inds = (chunk_index - 1) * obj.meta.abrdfs_per_chunk + 1 : ...
                         min(max(obj.meta.abrdf_index_logical_to_storage), chunk_index * obj.meta.abrdfs_per_chunk);
                     logical_abrdf_inds = abrdf_index_storage_to_logical(storage_abrdf_inds);
 
-                    obj.progress(chunk_index / obj.meta.num_chunks, 'reading texture');
+                    % every 10 chunks, update the intermediate image
+                    if mod(ci, 10) == 0
+                        img_disp = permute(img(:, 1, :, :), [4, 3, 1, 2]);
+                        if strcmp(data_type, 'uint16')
+                            img_disp = halfprecision(img_disp, 'single');
+                        end
+                        obj.progress(ci / numel(chunks_missing), 'reading texture', ...
+                            'texture', img_disp);
+                    end
                     obj.data.current_chunk = reshape(obj.get_bdi_chunk(chunk_index), ...
                         obj.meta.num_channels, obj.meta.nL, obj.meta.nV, []);
                     img(:, logical_abrdf_inds) = squeeze(obj.data.current_chunk(:, l(ii), v(ii), :));
                 end
-                fclose(obj.data.fid);
+                fclose(fid);
                 obj.progress();
             end
         end

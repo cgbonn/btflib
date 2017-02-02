@@ -180,14 +180,14 @@ classdef btf < handle
                 
                 obj.meta.file_name = '';
                 
-                switch obj.format_str
-                    case {'bdi', 'BDI'}
+                switch lower(obj.format_str)
+                    case 'bdi'
                         obj.create_ubo_bdi(p.Results.meta, p.Results.data);
-                    case {'dfmf', 'DFMF'}
+                    case 'dfmf'
                         obj.create_ubo_dfmf(p.Results.meta, p.Results.data);
-                    case {'fmf', 'FMF'}
+                    case 'fmf'
                         obj.create_ubo_fmf(p.Results.meta, p.Results.data);
-                    case {'pvf', 'PVF'}
+                    case 'pvf'
                         obj.create_ubo_pvf(p.Results.meta, p.Results.data);
                     otherwise
                         error('format_str %s not supported', obj.format_str);
@@ -201,14 +201,14 @@ classdef btf < handle
             [obj.format_str, header_flag, signature] = identify_signature(fid);
             frewind(fid);
 
-            switch obj.format_str
-                case {'bdi', 'BDI'}
+            switch lower(obj.format_str)
+                case 'bdi'
                     [obj.data, obj.meta] = read_ubo_bdi(fid, signature, header_flag);
-                case {'dfmf', 'DFMF'}
+                case 'dfmf'
                     [obj.data, obj.meta] = read_ubo_dfmf(fid, signature, obj.quality);
-                case {'fmf', 'FMF'}
+                case 'fmf'
                     [obj.data, obj.meta] = read_ubo_fmf(fid, signature, header_flag, obj.quality);
-                case {'pvf', 'PVF'}
+                case 'pvf'
                     [obj.data, obj.meta] = read_ubo_pvf(fid, signature, obj.quality);
                 otherwise
                     error(['BTF: This format is currently unsupportet, ', ...
@@ -234,12 +234,12 @@ classdef btf < handle
             % TODO: implement writing of PVFs
             fid = fopen(file_name, 'w');
             
-            switch obj.format_str
-                case {'bdi', 'BDI'}
+            switch lower(obj.format_str)
+                case 'bdi'
                     obj.write_ubo_bdi(fid);
-                case {'dfmf', 'DFMF'}
+                case 'dfmf'
                     write_ubo_dfmf(fid, obj.data, obj.meta);
-                case {'fmf', 'FMF'}
+                case 'fmf'
                     write_ubo_fmf(fid, obj.data, obj.meta);
                 otherwise
                     error('BTF: writing is only implemented for BDI or (D)FMF format!');
@@ -373,12 +373,16 @@ classdef btf < handle
             end
         end
         
-        function buffered = is_buffered(obj)
+        function [buffered, num_chunks_buffered, num_chunks_tot] = is_buffered(obj)
             % checks if BDI is buffered
             % (BTFs are always fully buffered, hence the default true)
             buffered = true;
+            num_chunks_buffered = 1;
+            num_chunks_tot = 1;
             if obj.is_bdi()
-                buffered = ~all(~obj.data.chunks_buffered);
+                num_chunks_tot = numel(obj.data.chunks_buffered);
+                num_chunks_buffered = nnz(obj.data.chunks_buffered);
+                buffered = num_chunks_buffered == num_chunks_tot;
             end
         end
         
@@ -856,12 +860,12 @@ classdef btf < handle
             V_idxs(V_idxs > obj.meta.nV) = 1;
         end
         
-        function progress(obj, value, str)
+        function progress(obj, value, str, varargin)
             % this function is called by members of btf objects to send status updates
             if obj.verbose
                 try %#ok<TRYNC>
                     if exist('value', 'var')
-                        obj.progress_fcn(value, str);
+                        obj.progress_fcn(value, str, varargin{:});
                     else
                         obj.progress_fcn();
                     end
