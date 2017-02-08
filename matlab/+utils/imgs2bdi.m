@@ -74,9 +74,11 @@ function btf_obj = imgs2bdi(folder, filter, roi, output_format, verbose)
         verbose = 2;
     end
     
+    folder = tb.make_absolute(folder);
+    
     % get file names and sort them by light / view angles
     fnames = dir(folder);
-    folders = {fnames.folder}';
+    folders = repmat({folder}, numel(fnames), 1);
     fnames = {fnames.name}';
     matching = regexpi(fnames, filter);
     matching = cellfun(@(x) ~isempty(x), matching);
