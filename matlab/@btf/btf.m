@@ -145,9 +145,12 @@ classdef btf < handle
             % EVs (optional): cell array with vectors containing the eigenvalues
             %	for each view slot
             p = inputParser;
+            p.CaseSensitive = false;
+            p.KeepUnmatched = true;
             p.StructExpand = false;
-            p.addParamValue('quality', 1, @(x) isscalar(x) && isnumeric(x));
-            p.addParamValue('progress_callback', @obj.default_progress_fcn, @(x) isa(x, 'function_handle'));
+            p.addParameter('quality', 1, @(x) isscalar(x) && isnumeric(x));
+            p.addParameter('progress_callback', @obj.default_progress_fcn, ...
+                @(x) isa(x, 'function_handle'));
             
             [~, supported_formats] = ubo_btf_signatures();
             
@@ -403,20 +406,75 @@ classdef btf < handle
             end
         end
         
-        function [L, V] = get_LV_full(obj)
+        function n = nC(obj)
+            % return number of channels
+            n = obj.meta.num_channels;
+        end
+        
+        function n = nL(obj)
+            % return number of unique light directions
+            n = obj.meta.nL;
+        end
+        
+        function n = nV(obj)
+            % return number of unique view directions
+            n = obj.meta.nV;
+        end
+        
+        function n = nLV(obj)
+            % return number of unique view directions
+            n = obj.meta.nV;
+        end
+        
+        function n = width(obj)
+            % return texture width
+            n = obj.meta.width;
+        end
+        
+        function n = height(obj)
+            % return texture height
+            n = obj.meta.height;
+        end
+        
+        function [L, V] = get_LV_full(obj, linds, vinds)
             % get cartesian product of the sampled light and view directions
-            L = obj.get_L_full();
-            V = obj.get_V_full();
+            if ~exist('linds', 'var') || isempty(linds) || strcmp(linds, ':')
+                linds = 1 : obj.nL;
+            end
+            
+            if ~exist('vinds', 'var') || isempty(vinds) || strcmp(vinds, ':')
+                vinds = 1 : obj.nV;
+            end
+            
+            L = obj.get_L_full(linds, vinds);
+            V = obj.get_V_full(linds, vinds);
         end
         
-        function L = get_L_full(obj)
+        function L = get_L_full(obj, linds, vinds)
             % get light direction for each sample in the data
-            L = repmat(obj.meta.L, obj.meta.nV, 1);
+            if ~exist('linds', 'var') || isempty(linds) || strcmp(linds, ':')
+                linds = 1 : obj.nL;
+            end
+            
+            if ~exist('vinds', 'var') || isempty(vinds) || strcmp(vinds, ':')
+                vinds = 1 : obj.nV;
+            end
+            
+            L = repmat(obj.meta.L(linds, :), numel(vinds), 1);
         end
         
-        function V = get_V_full(obj)
+        function V = get_V_full(obj, linds, vinds)
             % get view direction for each sample in the data
-            V = obj.meta.V(:) * ones(1, obj.meta.nL);
+            if ~exist('linds', 'var') || isempty(linds) || strcmp(linds, ':')
+                linds = 1 : obj.nL;
+            end
+            
+            if ~exist('vinds', 'var') || isempty(vinds) || strcmp(vinds, ':')
+                vinds = 1 : obj.nV;
+            end
+            
+            V = obj.meta.V(vinds, :);
+            V = V(:) * ones(1, numel(linds));
             V = reshape(V', [], 3);
         end
         
