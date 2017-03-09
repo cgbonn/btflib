@@ -753,7 +753,7 @@ classdef btf < handle
                 nlv = size(L(:, :), 2);
                 assert(nlv == size(V(:, :), 2));
                 
-                img = zeros(obj.meta.width, obj.meta.height, ...
+                img = zeros(obj.meta.height, obj.meta.width, ...
                     obj.meta.num_channels, nlv, obj.data.class);
                 [ls, vs, weights_l, weights_v] = obj.lookup_dirs(L, V);
                 weights_l = reshape(weights_l', 1, 1, 3, []);
