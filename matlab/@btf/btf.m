@@ -442,7 +442,7 @@ classdef btf < handle
         
         function n = nLV(obj)
             % return number of unique view directions
-            n = obj.meta.nV;
+            n = obj.meta.nV * obj.meta.nL;
         end
         
         function n = width(obj)

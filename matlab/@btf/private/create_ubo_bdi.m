@@ -105,4 +105,10 @@ function obj = create_ubo_bdi(obj, meta, data)
     % diable loading textures from file
     obj.data.textures_from_file = false;
     obj.data.only_use_buffered = true;
+    
+    if strcmpi(class(obj.data.chunks), 'uint16')
+        obj.data.class = 'single';
+    else
+        obj.data.class = class(obj.data.chunks);
+    end
 end
