@@ -240,7 +240,8 @@ classdef btf < handle
             end
 
             % store full path
-            if isempty(which(file_name))
+            fn = which(file_name);
+            if isempty(fn)
                 % path already is absolute and not on the search path
                 obj.meta.file_name = file_name;
             else
