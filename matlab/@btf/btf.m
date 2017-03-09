@@ -160,16 +160,28 @@ classdef btf < handle
             end
             if ~ismember(lower(file_name), lower(supported_formats))
                 % supposedly the path to a BTF file
-                if ~exist(file_name, 'file')
+                if exist(file_name, 'file') == 7
+                    % input is a folder
+                    obj.format_str = 'images';
+                elseif exist(file_name, 'file') ~= 2
+                    % input is neither file, nor folder
                     error('BTF file not found.');
                 end
                 varargin = varargin(2 : end);
+                % convert raw image format to BDI?
+                p.addParameter('to_bdi', true, @isscalar);
                 p.parse(varargin{:});
                 obj.quality = p.Results.quality;
                 obj.progress_fcn = p.Results.progress_callback;
                 
                 % read from file
-                obj = obj.read(file_name);
+                obj = obj.read(file_name, p.Unmatched);
+                
+                if strcmpi(obj.format_str, 'images') && p.Results.to_bdi
+                    % currently the only option to decode from raw images
+                    obj.format_str = 'BDI';
+                    obj.create_ubo_bdi(obj.meta, obj.data);
+                end
             elseif ismember(lower(file_name), lower(supported_formats))
                 % create btf object directly from data
                 
@@ -198,13 +210,17 @@ classdef btf < handle
             end
         end
         
-        function obj = read(obj, file_name)
+        function obj = read(obj, file_name, varargin)
             % load binary BTF file
-            fid = fopen(file_name, 'r');
-            [obj.format_str, header_flag, signature] = identify_signature(fid);
-            frewind(fid);
+            if ~strcmpi(obj.format_str, 'images')
+                fid = fopen(file_name, 'r');
+                [obj.format_str, header_flag, signature] = identify_signature(fid);
+                frewind(fid);
+            end
 
             switch lower(obj.format_str)
+                case 'images'
+                    [obj.data, obj.meta] = read_ubo_images(file_name, varargin{:});
                 case 'bdi'
                     [obj.data, obj.meta] = read_ubo_bdi(fid, signature, header_flag);
                 case 'dfmf'
@@ -219,7 +235,9 @@ classdef btf < handle
                         'the format ''%s'' from it'], signature, obj.format_str);
             end
 
-            fclose(fid);
+            if ~strcmpi(obj.format_str, 'images')
+                fclose(fid);
+            end
 
             % store full path
             if isempty(which(file_name))
