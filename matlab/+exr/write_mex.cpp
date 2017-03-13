@@ -1,5 +1,4 @@
 /**************************************************************************
- * This code is part of Matlab Toolbox.
  * Copyright 2017 University of Bonn
  *
  * authors:
@@ -7,7 +6,22 @@
  *
  * file creation date: 2017-01-25
  *
- *************************************************************************
+ * This file is part of btflib.
+ *
+ * btflib is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * btflib is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with btflib.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ ************************************************************************
 
  Mex file for writing images in OpenEXR format. Usage:
 
@@ -44,8 +58,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		mexErrMsgTxt("Function does not return any outputs.");
     }
 
-	if (nrhs != 4) {
-		mexErrMsgTxt("Usage: exr.write_mex(image, filename, precision, channel_names);");
+	if (nrhs != 5) {
+		mexErrMsgTxt("Usage: exr.write_mex(image, filename, precision, channel_names, compression);");
     }
     
     if (!mxIsChar(prhs[1])) {
@@ -60,6 +74,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int precision = (int) mxGetScalar(prhs[2]); // 0: UINT, 1: HALF, 2: FLOAT
     const mxArray* mx_channels = prhs[3];
     mwSize num_channel_names = mxGetNumberOfElements(mx_channels);
+    int compression = (int) mxGetScalar(prhs[4]);
 
 	int ndims = mxGetNumberOfDimensions(prhs[0]);
 	if (ndims < 2 || ndims > 3) {
@@ -88,6 +103,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             || mxGetClassID(prhs[0]) == mxUINT32_CLASS)) {
         mexErrMsgTxt("If the image array is in uint16 (or half) or uint32 format, precision must be set to 'half' or 'uint'.");
     }
+    
+    if (!mxIsScalar(prhs[4]) || 0 > compression || compression > 7) {
+        mexErrMsgTxt("compression argument must be an integer between 0 and 7.");
+    }
 
 	try {
         float* img = (float*) mxGetData(prhs[0]);
@@ -111,6 +130,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
         
         Header header(width, height);
+        
+        /* from the header file:
+         * NO_COMPRESSION  = 0,	// no compression
+         * RLE_COMPRESSION = 1,	// run length encoding
+         * ZIPS_COMPRESSION = 2,	// zlib compression, one scan line at a time
+         * ZIP_COMPRESSION = 3,	// zlib compression, in blocks of 16 scan lines
+         * PIZ_COMPRESSION = 4,	// piz-based wavelet compression
+         * PXR24_COMPRESSION = 5,	// lossy 24-bit float compression
+         * B44_COMPRESSION = 6,	// lossy 4-by-4 pixel block compression, fixed compression rate
+         * B44A_COMPRESSION = 7,	// lossy 4-by-4 pixel block compression, flat fields are compressed more
+         * NUM_COMPRESSION_METHODS	// number of different compression methods
+         */
+        header.compression() = (Compression) compression;
 
         std::vector<std::string> channel_names(num_channels);
         for (int i = 0; i < num_channels; i++) {
