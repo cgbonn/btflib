@@ -67,7 +67,7 @@ function img = decode_bdi_texture(obj, l, v)
             if obj.data.textures_from_file && ~obj.data.only_use_buffered
                 % optionally fallback to reading from file for unbuffered chunks
                 chunks_missing = find(~obj.data.chunks_buffered);
-                fid = fopen(obj.meta.file_name, 'r');
+                obj.data.fid = fopen(obj.meta.file_name, 'r');
                 for ci = 1 : numel(chunks_missing)
                     chunk_index = chunks_missing(ci);
                     % only assign the texels that are not masked!
@@ -88,7 +88,7 @@ function img = decode_bdi_texture(obj, l, v)
                         obj.meta.num_channels, obj.meta.nL, obj.meta.nV, []);
                     img(:, logical_abrdf_inds) = squeeze(obj.data.current_chunk(:, l(ii), v(ii), :));
                 end
-                fclose(fid);
+                fclose(obj.data.fid);
                 obj.progress();
             end
         end
