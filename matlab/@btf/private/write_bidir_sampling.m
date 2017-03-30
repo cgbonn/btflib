@@ -32,8 +32,8 @@ function write_bidir_sampling(fid, meta)
     if is_tensor_product_sampling
         fwrite(fid, meta.nV, 'uint32');
         
-        V_sph = utils.cart2sph2(meta.V);
-        L_sph = utils.cart2sph2(meta.L)';
+        V_sph = utils.cart2sph2(meta.V(:, 1), meta.V(:, 2), meta.V(:, 3));
+        L_sph = utils.cart2sph2(meta.L(:, 1), meta.L(:, 2), meta.L(:, 3))';
         for v = 1 : meta.nV
             fwrite(fid, V_sph(v, :), 'single');
             fwrite(fid, meta.nL, 'uint32');
