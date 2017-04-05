@@ -11,7 +11,7 @@ If you want to use the MATLAB code, you need to compile the bundled IEEE 754r Ha
 
 *   change to the subfolder *matlab/thirdparty/half_precision/*
 *   from the MATLAB command window call halfprecision() without any arguments
-*   this should automatically call the mex compiler and no errors are produced, you can test the library with
+*   this should automatically call the mex compiler and if no errors are produced, you can test the library with
 *   halfprecision(halfprecision(single(0.1)), 'single')
 *   this should output 0.1 again
 *   you can now add the subfolder *matlab/thirdparty/half_precision/* to your MATLAB search path: addpath('matlab/thirdparty/half_precision/') (from this repository's root folder)

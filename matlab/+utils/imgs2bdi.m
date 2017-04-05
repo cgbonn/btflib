@@ -106,7 +106,13 @@ function btf_obj = imgs2bdi(folder, filter, roi, output_format, verbose)
     tpl = unique([tl, pl], 'rows');
     tpv = unique([tv, pv], 'rows');
     L = utils.sph2cart2(tpl);
+    if size(L, 2) == 1
+        L = L';
+    end
     V = utils.sph2cart2(tpv);
+    if size(V, 2) == 1
+        V = V';
+    end
     nl = size(tpl, 1);
     nv = size(tpv, 1);
     
