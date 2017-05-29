@@ -72,6 +72,14 @@ function write(im, filename, precision, channel_names, compression)
         im = single(im);
     end
     
+    if exist('channel_names', 'var') && ~iscell(channel_names)
+        if ischar(channel_names) && numel(channel_names) == size(im, 3)
+            channel_names = num2cell(channel_names);
+        else
+            channel_names = {channel_names};
+        end
+    end
+    
     if ~exist('channel_names', 'var')
         if size(im, 3) == 1
             channel_names = {'L'};
