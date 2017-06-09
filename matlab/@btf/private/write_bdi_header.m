@@ -42,8 +42,8 @@ function write_bdi_header(obj, fid)
     else
         compression = 2; % sparse uncompressed
     end
-    if compression ~= 2
-        error('only sparse uncompressed BDIs are supported at the moment.');
+    if compression ~= 0 && compression ~= 2
+        error('only full or sparse uncompressed BDIs are supported at the moment.');
     end
     
     % write signature, meta data & bidir sampling

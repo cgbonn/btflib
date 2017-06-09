@@ -50,6 +50,8 @@ function meta = read_meta_data(fid)
         xml_size = fread(fid, 1, '*uint32');
         if (xml_size > 0)
             meta.xml = fread(fid, xml_size, '*char');
+        else
+            meta.xml = '';
         end
         clear xml_size
     end

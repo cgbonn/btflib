@@ -144,6 +144,6 @@ function obj = crop_bdi(obj, roi, strides, output_file_name)
     catch err
         % ensure object is in a valid state in case of errors
         obj.meta = meta_old;
-        error(err);
+        rethrow(err);
     end
 end
