@@ -41,22 +41,24 @@ function texel = decode_pvf_texel(obj, x, y, l, v)
     % determine transposition of BTF-matrix
     if size(Cs{1}, 1) == nC * nL
         % light fields stacked column-wise
-        texel = zeros(nxy, nc, nlv, obj.data.class);
-        xyInd = sub2ind([h, w], y, x);
+        texel = zeros(nlv, 1, nc, obj.data.class);
+        xyInd = sub2ind([w, h], x, y);
         for ii = 1 : nlv
-            clInds = sub2ind([nC, nL], repmat((1 : nC)', 1, n), repmat(l(ii), 1, nC));
-            texel(:, :, ii) = reshape(Ws{v(ii)}(xyInd, :) * Cs{v(ii)}(clInds, :) + ...
-                Ms{v(ii)}(clInds)', nC, nxy);
+            for ci = 1 : nC
+                clInd = sub2ind([nC, nL], ci, l(ii));
+                texel(ii, 1, ci) = sum(Ws{v(ii)}(xyInd(ii), :) .* Cs{v(ii)}(clInd, :), 2) + ...
+                    Ms{v(ii)}(clInd);
+            end
         end
-        texel = permute(texel, [3, 1, 2]);
     elseif size(Cs{1}, 1) == nC * h * w
         % images stacked column-wise
-        texel = zeros(nC, nxy, nlv, obj.data.class);
-        cxyInds = sub2ind([nC, h, w], repmat((1 : nC)', 1, nxy), ...
-            repmat(y(:)', nC, 1), repmat(x(:)', nC, 1));
+        texel = zeros(nlv, 1, nC, obj.data.class);
         for ii = 1 : nlv
-            texel(:, :, ii) = reshape(Cs{v(ii)}(cxyInds, :) * ...
-                Ws{v(ii)}(l(ii), :)', nC, nxy, 1) + Ms{v(ii)}(cxyInds);
+            for ci = 1 : nC
+                cxyInd = sub2ind([nC, w, h], ci, x(ii), y(ci));
+                texel(ii, 1, ci) = sum(Cs{v(ii)}(cxyInd, :) .* ...
+                    Ws{v(ii)}(l(ii), :), 2) + Ms{v(ii)}(cxyInd);
+            end
         end
         texel = permute(texel, [3, 2, 1]);
     else

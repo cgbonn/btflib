@@ -33,10 +33,14 @@ function texel = decode_bdi_texel(obj, x, y, l, v)
     nxy = numel(x);
     assert(nxy == numel(y));
     
+    assert(nxy == nlv);
+    
     abrdf = obj.decode_bdi_abrdf(x, y);
-    texel = zeros(nxy, nC, nlv, 'single');
-    for ii = 1 : nlv
-        texel(:, :, ii) = abrdf(l(ii), v(ii), :, :);
+    texel = zeros(1, nC, nlv, 'single');
+    for ci = 1 : nC
+        inds = sub2ind([nL, nV, nxy, nC], l(:), v(:), ...
+            (1 : nxy)', ci * ones(nlv, 1));
+        texel(1, ci, :) = abrdf(inds);
     end
     texel = permute(texel, [3, 1, 2]);
 end

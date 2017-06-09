@@ -38,19 +38,22 @@ function texel = decode_fmf_texel(obj, x, y, l, v)
     nlv = numel(l);
     assert(nxy == numel(y) && nlv == numel(v));
     
+    texel = zeros(nlv, 1, nC, obj.data.class);
     % determine transposition of BTF-matrix
     if size(U, 1) == nC * nL * nV
         % abrdfs stacked column-wise
-        xyInd = sub2ind([h, w], y, x);
-        clvInds = sub2ind([nC, nL, nV], repmat((1 : nC)', 1, nlv), ...
-            repmat(l(:)', nC, 1), repmat(v(:)', nC, 1));
-        texel = permute(reshape(U(clvInds, :) * SxV(xyInd, :)', nC, nlv, nxy), [2, 3, 1]);
+        xyInd = sub2ind([w, h], x, y);
+        for ci = 1 : nC
+            clvInds = sub2ind([nC, nL, nV], repmat(ci, 1, nlv), l, v);
+            texel(:, 1, ci) = sum(U(clvInds, :) .* SxV(xyInd, :), 2);
+        end
     elseif size(U,1) == nC * h * w
         % images stacked column-wise
-        cxyInds = sub2ind([nC, h, w], repmat((1 : nC)', 1, nxy), ...
-            repmat(y(:)', nC, 1), repmat(x(:)', nC, 1));
         lvInds = sub2ind([nL, nV], l, v);
-        texel = permute(reshape(SxV(lvInds, :) * U(cxyInds, :)', nlv, nC, nxy), [1, 3, 2]);
+        for ci = 1 : nC
+            cxyInds = sub2ind([nC, w, h], repmat(ci, 1, nlv), x, y);
+            texel(:, 1, ci) = sum(SxV(lvInds, :) .* U(cxyInds, :), 2);
+        end
     else
         error('unknown format of BTF U-component');
     end

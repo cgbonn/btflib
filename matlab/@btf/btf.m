@@ -427,6 +427,25 @@ classdef btf < handle
             end
         end
         
+        function varargout = size(obj, varargin)
+            varargout = cell(1, max(1, nargout));
+            
+            s = [obj.num_channels, obj.nL, obj.nV, obj.width, obj.height];
+            
+            if numel(varargout) == 1
+                varargout{1} = s;
+            else
+                for ii = 1 : numel(varargout)
+                    varargout{ii} = s(ii);
+                end
+            end
+        end
+        
+        function disp(obj)
+            fprintf('%d x %d x %d x %d x %d %s BTF\n', ...
+                obj.nC, obj.nL, obj.nV, obj.width, obj.height, obj.format_str);
+        end
+        
         function n = nC(obj)
             % return number of channels
             n = obj.meta.num_channels;
@@ -594,6 +613,47 @@ classdef btf < handle
             abrdf = reshape(permute(abrdf, [1, 2, 4, 3]), obj.meta.nL, obj.meta.nV, obj.meta.num_channels, []);
         end
         
+        function texels = evaluate(obj, Ls, Vs, ignore, us, vs, ignore2)
+            % evaluate the BTF at given texture coordinates and light / view
+            % directions with interpolation
+            %
+            % us and vs are texture coordinates, i.e. they are wrapped to [0, 1]
+            % respectively, and can be stored in arrays of arbitrary size; Ls
+            % and Vs are 3 x N x ... arrays of cartesian light and view
+            % directions
+            
+            n = numel(us);
+            assert(n == numel(vs) && n == numel(Ls) / 3 && n == numel(Vs) / 3, ...
+                ['all input arrays must have the same number of texture '...
+                'coordinates or directions']);
+            
+            assert(size(Ls, 1) == 3 && size(Vs, 1) == 3, ...
+                'light and view arrays must be 3 x N x ...');
+            
+            % bring UV-coordinates to the correct range (i.e. [1, height] x [1,
+            % width]
+            vs = mod(vs(:)' * (obj.height - 1), obj.height - 1) + 1;
+            us = mod(us(:)' * (obj.width - 1), obj.width - 1) + 1;
+            
+            xl = floor(us);
+            xu = ceil(us);
+            yl = floor(vs);
+            yu = ceil(vs);
+            
+            % look up texel values in the four samplesaround the query points
+            tll = obj.decode_texel(xl, yl, Ls, Vs, false);
+            tlu = obj.decode_texel(xl, yu, Ls, Vs, false);
+            tul = obj.decode_texel(xu, yl, Ls, Vs, false);
+            tuu = obj.decode_texel(xu, yu, Ls, Vs, false);
+            
+            wx = reshape(xu - us, 1, 1, []);
+            wy = reshape(yu - vs, 1, 1, []);
+            
+            texels = permute(bsxfun(@times, wx .* wy, tll) + bsxfun(@times, wx .* (1 - wy), tlu)...
+                 + bsxfun(@times, (1 - wx) .* wy, tul) + bsxfun(@times, (1 - wx) .* (1 - wy), tuu), ...
+                 [1, 3, 2]);
+        end
+        
         function texel = decode_texel(obj, x, y, L, V, form_cart_prod)
             % decode a single texel at given pixel coordinates for given light & view directions
             % 
@@ -630,12 +690,12 @@ classdef btf < handle
             dim_L = size(L);
             dim_V = size(V);
             
-            if ~all(dim_x == dim_y) || form_cart_prod
+            if form_cart_prod
                 % apparently we're supposed to form the cartesian product
                 [x, y] = ndgrid(x(:), y(:));
             end
             
-            if ~all(dim_L == dim_V) || form_cart_prod
+            if form_cart_prod
                 % apparently we're supposed to form the cartesian product
                 L_in = L;
                 V_in = V;
@@ -689,7 +749,16 @@ classdef btf < handle
                 nxy = numel(x);
                 assert(nxy == numel(y));
                 
-                texel = zeros(nlv, nxy, obj.meta.num_channels, obj.data.class);
+                if ~form_cart_prod && nlv ~= nxy
+                    error(['number of LV samples should be the same as xy ', ...
+                        'coordinates when form_cart_prod is set to false']);
+                end
+                
+                if form_cart_prod
+                    texel = zeros(nlv, nxy, obj.meta.num_channels, obj.data.class);
+                else
+                    texel = zeros(nlv, 1, obj.meta.num_channels, obj.data.class);
+                end
                 
                 % get interpolation indices and weights
                 [ls, vs, weights_l, weights_v] = obj.lookup_dirs(L, V);
@@ -699,8 +768,12 @@ classdef btf < handle
                         v = vs(:, vi);
                         
                         texel = texel + bsxfun(@times, weights_l(:, li) .* weights_v(:, vi), ...
-                            obj.decode_texel(int32(x), int32(y), int32(l), int32(v)));
+                            obj.decode_texel(int32(x), int32(y), int32(l), int32(v), false));
                     end
+                end
+                
+                if ~form_cart_prod
+                    texel = permute(texel, [3, 2, 1]);
                 end
             else
                 error('error while decoding: either provide readily computed indices, 3D cartesian directions, or two polar angles respectively for light and view.');

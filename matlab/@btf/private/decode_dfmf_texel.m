@@ -43,18 +43,18 @@ function texel = decode_dfmf_texel(obj, x, y, l, v)
     assert(nxy == numel(y) && nlv == numel(v));
     
     % determine transposition of BTF-matrix
-    texel = zeros(nlv, nxy, nC, obj.data.class);
-    xyInds = sub2ind([h, w], y, x);
+    texel = zeros(nlv, 1, nC, obj.data.class);
+    xyInds = sub2ind([w, h], x, y);
     lvInds = sub2ind([nL, nV], l, v);
     if size(U{1}, 1) == nL * nV
         % abrdfs stacked column-wise
         for c = 1 : nC
-            texel(:, :, c) = U{c}(lvInds, :) * SxV{c}(xyInds, :)';
+            texel(:, 1, c) = sum(U{c}(lvInds, :) .* SxV{c}(xyInds, :), 2);
         end
     elseif size(U{1}, 1) == h * w
         % images stacked column-wise
         for c = 1 : obj.nC
-            texel(:, :, c) = SxV{c}(lvInds, :) * U{c}(xyInds, :)';
+            texel(:, :, c) = sum(SxV{c}(lvInds, :) .* U{c}(xyInds, :), 2);
         end
     else
         error('unknown format of BTF U-component');
