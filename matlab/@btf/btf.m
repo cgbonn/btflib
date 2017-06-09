@@ -207,6 +207,8 @@ classdef btf < handle
                     otherwise
                         error('format_str %s not supported', obj.format_str);
                 end
+                
+                obj = obj.init_dirs();
             end
         end
         
