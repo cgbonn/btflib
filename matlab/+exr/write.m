@@ -72,6 +72,9 @@ function write(im, filename, precision, channel_names, compression)
         im = single(im);
     end
     
+    if exist('channel_names', 'var') && isnumeric(channel_names) && numel(channel_names) == size(im, 3)
+        channel_names = cellfun(@num2str, num2cell(channel_names), 'UniformOutput', false);
+    end
     if exist('channel_names', 'var') && ~iscell(channel_names)
         if ischar(channel_names) && numel(channel_names) == size(im, 3)
             channel_names = num2cell(channel_names);
@@ -86,7 +89,8 @@ function write(im, filename, precision, channel_names, compression)
         elseif size(im, 3) == 3
             channel_names = {'R', 'G', 'B'};
         else
-            channel_names = utils.sprintf2('C%d', 1 : size(im, 3));
+            channel_names = cellfun(@(n) sprintf('C%d', n), num2cell(1 : size(im, 3)), ...
+                'UniformOutput', false);
         end
     end
     
