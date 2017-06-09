@@ -37,7 +37,11 @@ function abrdf = decode_bdi_abrdf(obj, x, y)
     if isfield(obj.data, 'chunks') && ~isempty(obj.data.chunks)
         data_type = class(obj.data.chunks);
     end
-    abrdf = zeros(nC, nL, nV, n, 'single');
+    if strcmp(data_type, 'uint16')
+        abrdf = zeros(nC, nL, nV, n, 'uint16');
+    else
+        abrdf = zeros(nC, nL, nV, n, 'single');
+    end
     for ii = 1 : n
         % to make this the least painful w.r.t. file access, x coordinates
         % should be unrolled first, then y. this is due to the fact that
@@ -59,13 +63,13 @@ function abrdf = decode_bdi_abrdf(obj, x, y)
             abrdf_tmp = obj.get_bdi_chunk([], xi, yi);
             fclose(obj.data.fid);
         end
-
-        if strcmp(data_type, 'uint16')
-            abrdf_tmp = halfprecision(abrdf_tmp, 'single');
-        end
         
         % convert half precision floats to single precision floats & rearrange data
         abrdf(:, :, :, ii) = reshape(abrdf_tmp, nC, nL, nV);
+    end
+    
+    if strcmp(data_type, 'uint16')    
+        abrdf = halfprecision(abrdf, 'single');
     end
     
     abrdf = permute(abrdf, [2, 3, 4, 1]);

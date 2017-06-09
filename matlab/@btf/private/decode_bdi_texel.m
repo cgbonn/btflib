@@ -35,12 +35,26 @@ function texel = decode_bdi_texel(obj, x, y, l, v)
     
     assert(nxy == nlv);
     
-    abrdf = obj.decode_bdi_abrdf(x, y);
-    texel = zeros(1, nC, nlv, 'single');
-    for ci = 1 : nC
-        inds = sub2ind([nL, nV, nxy, nC], l(:), v(:), ...
-            (1 : nxy)', ci * ones(nlv, 1));
-        texel(1, ci, :) = abrdf(inds);
+    if ~obj.is_buffered() || ~all(obj.meta.mask(:))
+        error('rendering from file is too slow, please buffer the entire BDI to memory');
     end
-    texel = permute(texel, [3, 1, 2]);
+    
+    if strcmp(obj.data_type, 'single')
+        texel = zeros(nC, 1, nlv, 'uint16');
+    else
+        texel = zeros(nC, 1, nlv, 'single');
+    end
+    for ci = 1 : nC
+        inds = sub2ind([nC, nL, nV, obj.meta.width, ...
+            obj.meta.scan_lines_per_chunk, obj.meta.num_chunks], ...
+            repmat(ci, 1, nlv), l, v, x, ...
+            mod(y - 1, obj.meta.scan_lines_per_chunk) + 1, ...
+            floor((single(y) - 1) / obj.meta.scan_lines_per_chunk) + 1);
+        texel(ci, 1, :) = obj.data.chunks(inds);
+    end
+    if strcmp(obj.data_type, 'single')
+        texel = permute(texel, [3, 2, 1]);
+    else
+        texel = halfprecision(permute(texel, [3, 2, 1]), 'single');
+    end
 end
