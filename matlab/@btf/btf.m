@@ -179,7 +179,7 @@ classdef btf < handle
                 
                 if strcmpi(obj.format_str, 'images') && p.Results.to_bdi
                     % currently the only option to decode from raw images
-                    obj.format_str = 'BDI';
+                    obj.format_str = 'bdi';
                     obj.create_ubo_bdi(obj.meta, obj.data);
                 end
             elseif ismember(lower(file_name), lower(supported_formats))
@@ -300,14 +300,14 @@ classdef btf < handle
             inds_y = roi(2, 1) : strides(2) : roi(2, 2);
             
             % apply roi to data matrices
-            switch obj.format_str
-                case 'BDI'
+            switch lower(obj.format_str)
+                case 'bdi'
                     obj = obj.crop_bdi(roi, strides, output_file_name);
-                case 'DFMF'
+                case 'dfmf'
                     obj = obj.crop_dfmf(roi, strides);
-                case 'FMF'
+                case 'fmf'
                     obj = obj.crop_fmf(roi, strides);
-                case 'PVF'
+                case 'pvf'
                     obj = obj.crop_pvf(roi, strides);
             end
             
@@ -317,7 +317,7 @@ classdef btf < handle
         
         function bdi = is_bdi(obj)
             % check if the object is a uncompressed BDI
-            bdi = strcmp(obj.format_str, 'BDI');
+            bdi = strcmpi(obj.format_str, 'bdi');
         end
         
         function tf = is_spectral(obj)
@@ -332,7 +332,7 @@ classdef btf < handle
             % attempt to buffer as many ABRDF chunks from a BDI to memory;
             % optionally a fraction can be specified of the available memory
             % that is to be used
-            if ~strcmp(obj.format_str, 'BDI')
+            if ~strcmpi(obj.format_str, 'bdi')
                 error('buffer_bdi only works with BDIs. non-BDIs are always fully loaded to memory.');
             end
             
@@ -554,14 +554,14 @@ classdef btf < handle
                 [x, y] = ndgrid(x(:), y(:));
             end
             
-            switch obj.format_str
-                case 'BDI'
+            switch lower(obj.format_str)
+                case 'bdi'
                     abrdf = obj.decode_bdi_abrdf(x, y);
-                case 'DFMF'
+                case 'dfmf'
                     abrdf = obj.decode_dfmf_abrdf(x, y);
-                case 'FMF'
+                case 'fmf'
                     abrdf = obj.decode_fmf_abrdf(x, y);
-                case 'PVF'
+                case 'pvf'
                     abrdf = obj.decode_pvf_abrdf(x, y);
                 otherwise
                     error('decoder for BTF in %s format not implemented!', obj.format_str);
@@ -645,14 +645,14 @@ classdef btf < handle
                     isinteger(x) || isinteger(y) || ...
                     isinteger(L) || isinteger(V)
                 % direct access via indices
-                switch obj.format_str
-                    case 'BDI'
+                switch lower(obj.format_str)
+                    case 'bdi'
                         texel = obj.decode_bdi_texel(x, y, L, V);
-                    case 'DFMF'
+                    case 'dfmf'
                         texel = obj.decode_dfmf_texel(x, y, L, V);
-                    case 'FMF'
+                    case 'fmf'
                         texel = obj.decode_fmf_texel(x, y, L, V);
-                    case 'PVF'
+                    case 'pvf'
                         texel = obj.decode_pvf_texel(x, y, L, V);
                     otherwise
                         error('decoder for BTF in %s format not implemented!', obj.format_str);
@@ -794,12 +794,12 @@ classdef btf < handle
         function textures = get_eigen_textures(obj)
             % return the eigen textures of a matrix factorization-based
             % compressed BTF
-            switch obj.format_str
-                case 'DFMF'
+            switch lower(obj.format_str)
+                case 'dfmf'
                     textures = obj.get_dfmf_eigen_textures();
-                case 'FMF'
+                case 'fmf'
                     textures = obj.get_fmf_eigen_textures();
-                case 'PVF'
+                case 'pvf'
                     textures = obj.get_pvf_eigen_textures();
                 otherwise
                     error('extraction of eigen textures is only possible with (D)FMF BTFs or PVF BTFs.');
@@ -809,12 +809,12 @@ classdef btf < handle
         function abrdfs = get_eigen_abrdfs(obj)
             % return the eigen ABRDFs of a matrix factorization-based
             % compressed BTF
-            switch obj.format_str
-                case 'DFMF'
+            switch lower(obj.format_str)
+                case 'dfmf'
                     abrdfs = obj.get_dfmf_eigen_abrdfs();
-                case 'FMF'
+                case 'fmf'
                     abrdfs = obj.get_fmf_eigen_abrdfs();
-                case 'PVF'
+                case 'pvf'
                     abrdfs = obj.get_pvf_eigen_abrdfs();
                 otherwise
                     error('extraction of eigen ABRDFs is only possible with (D)FMF BTFs or PVF BTFs.');
@@ -824,8 +824,8 @@ classdef btf < handle
         function tensor = get_5d_tensor(obj)
             % extract the full data tensor as a 5-dimensional array (num_lights
             % x num_views x width x height x num_channels)
-            switch obj.format_str
-                case 'BDI'
+            switch lower(obj.format_str)
+                case 'bdi'
                     if numel(obj.data.chunks) == obj.meta.num_channels * ...
                             obj.meta.nL * obj.meta.nV * obj.meta.width * obj.meta.height
                         tensor = halfprecision(reshape(obj.data.chunks, obj.meta.num_channels, ...
@@ -834,7 +834,7 @@ classdef btf < handle
                         error(['Tensor can only be returned for fully buffered BDI. ', ...
                             'Please call buffer_bdi().']);
                     end
-                case 'DFMF'
+                case 'dfmf'
                     tensor = cell(obj.meta.num_channels, 1);
                     for c = 1 : obj.meta.num_channels
                         tensor{c} = obj.data.U{c} * obj.data.SxV{c}';
@@ -843,9 +843,9 @@ classdef btf < handle
                     tensor = obj.undecorrelate(tensor);
                     tensor = reshape(tensor, obj.meta.nL, obj.meta.nV, ...
                         obj.meta.width, obj.meta.height, obj.meta.num_channels);
-                case 'FMF'
+                case 'fmf'
                     error('not implemented yet!');
-                case 'PVF'
+                case 'pvf'
                     error('not implemented yet!');
             end
         end
