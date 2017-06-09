@@ -432,6 +432,11 @@ classdef btf < handle
             n = obj.meta.num_channels;
         end
         
+        function n = num_channels(obj)
+            % return number of channels
+            n = obj.meta.num_channels;
+        end
+        
         function n = nL(obj)
             % return number of unique light directions
             n = obj.meta.nL;
@@ -455,6 +460,11 @@ classdef btf < handle
         function n = height(obj)
             % return texture height
             n = obj.meta.height;
+        end
+        
+        function type = data_type(obj)
+            % return pixel data type
+            type = obj.data.class;
         end
         
         function [L, V] = get_LV_full(obj, linds, vinds)
