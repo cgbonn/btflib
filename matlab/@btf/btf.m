@@ -1005,6 +1005,8 @@ classdef btf < handle
             % lookup in Delaunay triangulation for both directions
             [L_ti, L_weights] = obj.TriL.pointLocation(reshape(L_par, 2, [])');
             [V_ti, V_weights] = obj.TriV.pointLocation(reshape(V_par, 2, [])');
+            L_weights = single(L_weights);
+            V_weights = single(V_weights);
             valid = ~isnan(L_ti) & ~isnan(V_ti);
             
             % we cannot return indices into the bottom ring, as we don't
