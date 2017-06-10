@@ -39,10 +39,10 @@ function texel = decode_bdi_texel(obj, x, y, l, v)
         error('rendering from file is too slow, please buffer the entire BDI to memory');
     end
     
-    if strcmp(obj.data_type, 'single')
+    if isa(obj.data.chunks, 'uint16')
         texel = zeros(nC, 1, nlv, 'uint16');
     else
-        texel = zeros(nC, 1, nlv, 'single');
+        texel = zeros(nC, 1, nlv, class(obj.data.chunks));
     end
     for ci = 1 : nC
         inds = sub2ind([nC, nL, nV, obj.meta.width, ...
@@ -52,9 +52,9 @@ function texel = decode_bdi_texel(obj, x, y, l, v)
             floor((single(y) - 1) / obj.meta.scan_lines_per_chunk) + 1);
         texel(ci, 1, :) = obj.data.chunks(inds);
     end
-    if strcmp(obj.data_type, 'single')
-        texel = permute(texel, [3, 2, 1]);
-    else
+    if isa(obj.data.chunks, 'uint16')
         texel = halfprecision(permute(texel, [3, 2, 1]), 'single');
+    else
+        texel = permute(texel, [3, 2, 1]);
     end
 end
