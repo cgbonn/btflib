@@ -33,6 +33,7 @@
     precision floats)
  - channel_names is a cell array of strings holding the names of each channel
  */
+#include <algorithm>
 #include <cstdint>
 
 #include <ImathBox.h>

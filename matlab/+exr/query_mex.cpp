@@ -25,6 +25,7 @@
  
  Mex file for querying meta data from an OpenEXR image file.
  */
+#include <algorithm>
 #include <vector>
 
 #include <ImfInputFile.h>
