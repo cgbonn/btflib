@@ -33,6 +33,7 @@
     precision floats)
  - channel_names is a cell array of strings holding the names of each channel
  */
+#include <algorithm>
 #include <cstdint>
 
 #include <ImathBox.h>
@@ -101,14 +102,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
         // set up output dimensions (warning: this ignores all datawindow related stuff)
         Box2i dw = header.dataWindow();
-		int width = dw.max.x - dw.min.x + 1;
-		int height = dw.max.y - dw.min.y + 1;
-        unsigned num_channels = (unsigned)channel_names.size();
+	mwSize width = dw.max.x - dw.min.x + 1;
+	mwSize height = dw.max.y - dw.min.y + 1;
+        mwSize num_channels = (mwSize) channel_names.size();
         
-        int dims[3];
-		dims[0] = height; 
-		dims[1] = width; 
-		dims[2] = num_channels;
+        mwSize dims[3];
+		dims[0] = (mwSize) height; 
+		dims[1] = (mwSize) width; 
+		dims[2] = (mwSize) num_channels;
         
         // reserve output array
         plhs[0] = mxCreateNumericArray(3, dims, output_type, mxREAL);
