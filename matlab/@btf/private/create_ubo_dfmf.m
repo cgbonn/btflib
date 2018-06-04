@@ -58,7 +58,12 @@ function obj = create_ubo_dfmf(obj, meta, data)
     % assign compontens
     obj.meta.num_components = size(p.Results.U{1}, 2);
     if isempty(p.Results.S)
-        obj.data.S = repmat({ones(obj.meta.num_components, 1)}, nC, 1);
+		%obj.data.S = repmat({ones(obj.meta.num_components, 1)}, nC, 1);
+        obj.data.S = cell(3, 1);
+        for ch = 1 : nC
+            nComponents = size(p.Results.U{ch}, 2);
+            obj.data.S{ch} = ones(nComponents, 1);
+        end
     else
         obj.data.S = p.Results.S;
     end
