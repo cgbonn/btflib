@@ -63,6 +63,18 @@ function meta = create_meta_struct(varargin)
     % sampling information
     meta.L = p.Results.light_dirs;
     meta.V = p.Results.view_dirs;
+    
+    if size(meta.L, 2) ~= 3
+        warning('btf:light_transposed', 'light array should be nL x 3');
+        meta.L = meta.L';
+    end
+    if size(meta.V, 2) ~= 3
+        warning('btf:view_transposed', 'light array should be nV x 3');
+        meta.V = meta.V';
+    end
+    assert(size(meta.L, 1) == meta.nL);
+    assert(size(meta.V, 1) == meta.nV);
+    
     meta.cosine_flag = p.Results.cosine_flag;
     
     % create default dome sampling if the input dimensions agree
