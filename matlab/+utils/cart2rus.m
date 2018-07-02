@@ -47,15 +47,15 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
     half = half ./ repmat(sqrt(sum(half .^ 2, 1)), 3, 1);
     half_sph = utils.cart2sph2(half(1, :), half(2, :), half(3, :));
 
-    cos_theta = cos(-half_sph(2, :));
-    sin_theta = sin(-half_sph(2, :));
-    cos_phi = cos(-half_sph(1, :));
-    sin_phi = sin(-half_sph(1, :));
+    cos_theta = cos(-half_sph(1, :));
+    sin_theta = sin(-half_sph(1, :));
+    cos_phi = cos(-half_sph(2, :));
+    sin_phi = sin(-half_sph(2, :));
     
     % compute difference vector
     % (the slow but readable way)
 %     diff = light_dirs;
-%     for jj = 1 : n,
+%     for jj = 1 : n
 %        rot_z = [cos_theta(jj), -sin_theta(jj), 0;
 %            sin_theta(jj), cos_theta(jj), 0;
 %            0, 0, 1];
@@ -68,14 +68,14 @@ function [half, diff, half_sph, diff_sph] = cart2rus(light_dirs, view_dirs)
     % this is the same computation of R_y * R_z * light as above but in a much
     % more efficient expression
     diff = zeros(3, prod(n));
-    diff(1, :) =	cos_phi .* cos_theta .* light_dirs(1, :) ...
-                  - cos_phi .* sin_theta .* light_dirs(2, :) ...
-                  + sin_phi .* light_dirs(3, :);
-    diff(2, :) =	sin_theta .* light_dirs(1, :) ...
-                  + cos_theta .* light_dirs(2, :);
-    diff(3, :) =  - sin_phi .* cos_theta .* light_dirs(1, :) ...
-                  + sin_phi .* sin_theta .* light_dirs(2, :) ...
-                  + cos_phi .* light_dirs(3, :);
+    diff(1, :) =	cos_theta .* cos_phi .* light_dirs(1, :) ...
+                  - cos_theta .* sin_phi .* light_dirs(2, :) ...
+                  + sin_theta .* light_dirs(3, :);
+    diff(2, :) =	sin_phi .* light_dirs(1, :) ...
+                  + cos_phi .* light_dirs(2, :);
+    diff(3, :) =  - sin_theta .* cos_phi .* light_dirs(1, :) ...
+                  + sin_theta .* sin_phi .* light_dirs(2, :) ...
+                  + cos_theta .* light_dirs(3, :);
     
     diff = diff ./ repmat(sqrt(sum(diff .^ 2, 1)), 3, 1);
     
