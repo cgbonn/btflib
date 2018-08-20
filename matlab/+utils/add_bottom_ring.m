@@ -30,24 +30,38 @@
 % assumed that these vectors are aligned in planes of equal z coordinates.
 % The method then tries to determine the number of vectors on the lowest
 % such plane and adds the same number, or at least ten in the z = 0 plane.
-function dirs = add_bottom_ring(dirs)
+function [dirs, mapping] = add_bottom_ring(dirs, num_bottom_dirs)
+    if ~exist('num_bottom_dirs', 'var')
+        num_bottom_dirs = [];
+    end
     assert(size(dirs, 1) == 3);
     % we're only interested in the inclination angle
     dirs_z = dirs(3, :);
 
     % do we actually need to add a bottom ring?
     if min(dirs_z) > 0
-        % find lowest z-plane
-        dirs_incl_thresh = min(dirs_z) + 1e-4 * min(dirs_z);
-        dirs_lowest_plane = dirs(:, dirs_z < dirs_incl_thresh);
-        num_lowest_dirs = max(10, size(dirs_lowest_plane, 2));
+        if isempty(num_bottom_dirs)
+            % find lowest z-plane
+            dirs_incl_thresh = min(dirs_z) + 1e-4 * min(dirs_z);
+            dirs_lowest_plane = dirs(:, dirs_z < dirs_incl_thresh);
+            num_bottom_dirs = max(10, size(dirs_lowest_plane, 2));
+        end
+        
+        % compute angular offset beyond the horizon to make sure the convex
+        % hull of the regular n-polygon covers the entire upper hemisphere
+        offset_sph = utils.cart2sph2(utils.par2cart([0, 1 / cosd(180 / num_bottom_dirs)]));
         
         % generate new vectors in spherical coordinates
-        polar = repmat(pi / 2, 1, num_lowest_dirs);
-        azimuth = linspace(0, (2 - 2 / num_lowest_dirs) * pi, num_lowest_dirs);
-        dirs_bottom_ring_sph = [polar; azimuth];
+        inclination = repmat(offset_sph(1), 1, num_bottom_dirs);
+        azimuth = linspace(0, (2 - 2 / num_bottom_dirs) * pi, num_bottom_dirs);
+        dirs_bottom_ring_sph = [inclination; azimuth];
+        dirs_bottom_ring = utils.sph2cart2(dirs_bottom_ring_sph);
+        
+        % set up mapping to actual existing directions
+        nn_bottom = knnsearch(dirs', dirs_bottom_ring', 'K', 1)';
+        mapping = [1 : size(dirs, 2), nn_bottom];
         
         % convert to cartesian coordinates
-        dirs = [dirs, utils.sph2cart2(dirs_bottom_ring_sph)];
+        dirs = [dirs, dirs_bottom_ring];
     end
 end
