@@ -35,6 +35,8 @@ function meta = create_meta_struct(varargin)
     p.addParameter('num_channels', 3, @(x) isscalar(x) && isnumeric(x) && x > 0);
     p.addParameter('light_dirs', [], @(x) isnumeric(x) && size(x, 2) == 3);
     p.addParameter('view_dirs', [], @(x) isnumeric(x) && size(x, 2) == 3);
+    p.addParameter('L', [], @(x) isnumeric(x) && size(x, 2) == 3);
+    p.addParameter('V', [], @(x) isnumeric(x) && size(x, 2) == 3);
     p.addParameter('cosine_flag', false, @(x) isscalar(x) && (isnumeric(x) || islogical(x)));
     p.addParameter('dynamic_range_reduction_method', 0, @(x) isscalar(x) && isnumeric(x));
     p.parse(varargin{:});
@@ -61,8 +63,13 @@ function meta = create_meta_struct(varargin)
     meta.dynamic_range_reduction_method = p.Results.dynamic_range_reduction_method;
     
     % sampling information
-    meta.L = p.Results.light_dirs;
-    meta.V = p.Results.view_dirs;
+    if ~isempty(p.Results.light_dirs) && ~isempty(p.Results.view_dirs)
+        meta.L = p.Results.light_dirs;
+        meta.V = p.Results.view_dirs;
+    else
+        meta.L = p.Results.L;
+        meta.V = p.Results.V;
+    end
     
     if size(meta.L, 2) ~= 3
         warning('btf:light_transposed', 'light array should be nL x 3');
