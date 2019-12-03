@@ -528,6 +528,15 @@ classdef btf < handle
             V = reshape(V', [], 3);
         end
         
+        function [Lpar, Vpar] = get_LV_full_par(obj)
+            % get full light and view sampling in parabolic coordinates
+            [L, V] = obj.get_LV_full();
+            L = single(L);
+            V = single(V);
+            Lpar = utils.cart2par(L);
+            Vpar = utils.cart2par(V);
+        end
+        
         function [lin, laz, vin, vaz] = inds_to_angles(obj, l, v)
             % given light and view indices, return the light & view inclination and azimuth angles
             l_sph = utils.cart2sph2(obj.meta.L(l, :));
@@ -990,6 +999,10 @@ classdef btf < handle
         function [L_idxs, V_idxs, L_weights, V_weights] = lookup_dirs(obj, L, V)
             % determine indices and weights for angular interpolation
             
+            class_in = class(L);
+            L = double(L);
+            V = double(V);
+            
             % transform input directions to parabolic coordinates
             if size(L, 1) == 3 && size(V, 1) == 3
                 L_par = utils.cart2par(L);
@@ -1022,6 +1035,9 @@ classdef btf < handle
             V_weights(V_idxs > obj.meta.nV) = 0;
             L_idxs(L_idxs > obj.meta.nL) = 1;
             V_idxs(V_idxs > obj.meta.nV) = 1;
+            
+            L_weights = cast(L_weights, class_in);
+            V_weights = cast(V_weights, class_in);
         end
         
         function progress(obj, value, str, varargin)
